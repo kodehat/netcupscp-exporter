@@ -58,7 +58,7 @@ func (f Flags) GetLogLevel() (slog.Level, error) {
 func (f Flags) GetLogHandler(w io.Writer) slog.Handler {
 	logLevel, err := f.GetLogLevel()
 	if err != nil {
-		panic(fmt.Errorf("unable to unmarshal log level: %w", err))
+		panic(fmt.Errorf("unable to unmarshal log level: %w\n", err))
 	}
 	logHandlerOptions := &slog.HandlerOptions{Level: logLevel}
 	if f.logJson {

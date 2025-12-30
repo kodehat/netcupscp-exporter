@@ -3,6 +3,7 @@ package metrics
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/kodehat/netcupscp-exporter/internal/authenticator"
@@ -40,12 +41,13 @@ func NewMetricsUpdater(authData *authenticator.AuthData) *MetricsUpdater {
 func (mu MetricsUpdater) UpdateMetricsPeriodically(context context.Context, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
+	slog.Info("starting periodic metrics update", "interval", interval.String())
 	metricsUpdateFunc := func() {
 		err := mu.UpdateMetrics(context)
 		if err != nil {
-			fmt.Printf("Error updating metrics: %v\n", err)
+			slog.Error("error while updating metrics (will continue trying)", "error", err)
 		} else {
-			fmt.Println("Metrics updated successfully")
+			slog.Debug("metrics have been updated successfully")
 		}
 	}
 	metricsUpdateFunc() // Run once immediately.
@@ -54,7 +56,7 @@ func (mu MetricsUpdater) UpdateMetricsPeriodically(context context.Context, inte
 		case <-ticker.C:
 			metricsUpdateFunc()
 		case <-context.Done():
-			fmt.Println("Stopping metrics updater")
+			slog.Debug("stopping updating metrics")
 			return
 		}
 	}

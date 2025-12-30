@@ -28,7 +28,7 @@ func main() {
 	}
 }
 
-func run(ctx context.Context, flags flags.Flags, stdin io.Reader, stdout, stderr io.Writer) error {
+func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, stderr io.Writer) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
@@ -38,7 +38,7 @@ func run(ctx context.Context, flags flags.Flags, stdin io.Reader, stdout, stderr
 	authenticator := authenticator.NewDefaultAuthenticator("", flags.RefreshToken)
 	authData, err := authenticator.Authenticate(ctx)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error during authentication: %s\n", err)
+		fmt.Fprintf(stderr, "error during authentication: %s\n", err)
 		return err
 	}
 	metricsUpdater := metrics.NewMetricsUpdater(authData)
@@ -53,7 +53,7 @@ func run(ctx context.Context, flags flags.Flags, stdin io.Reader, stdout, stderr
 	go func() {
 		logger.Info("server is now accepting connections", "address", httpServer.Addr)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
+			fmt.Fprintf(stderr, "error listening and serving: %s\n", err)
 		}
 	}()
 	var wg sync.WaitGroup
@@ -63,7 +63,7 @@ func run(ctx context.Context, flags flags.Flags, stdin io.Reader, stdout, stderr
 		shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
-			fmt.Fprintf(os.Stderr, "error shutting down http server: %s\n", err)
+			fmt.Fprintf(stderr, "error shutting down http server: %s\n", err)
 		}
 	})
 	wg.Wait()

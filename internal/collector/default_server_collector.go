@@ -2,7 +2,7 @@ package collector
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/kodehat/netcupscp-exporter/internal/authenticator"
@@ -27,32 +27,31 @@ func NewDefaultServerCollector(authData *authenticator.AuthData) DefaultServerCo
 func (c DefaultServerCollector) CollectServerData(context context.Context) ([]ServerInfo, error) {
 	bearerAuth, err := securityprovider.NewSecurityProviderBearerToken(c.AuthData.AccessToken)
 	if err != nil {
-		log.Panicf("Error creating bearer auth: %v", err)
+		slog.Error("error creating bearer auth", "error", err)
 		return nil, err
 	}
 	// TODO: Generate API with url.
 	respClient, err := client.NewClientWithResponses("https://servercontrolpanel.de/scp-core", client.WithHTTPClient(&c.httpClient), client.WithRequestEditorFn(bearerAuth.Intercept))
 	if err != nil {
-		log.Panicf("Error creating client: %v", err)
+		slog.Error("error creating client", "error", err)
 		return nil, err
 	}
 	resp, err := respClient.GetApiPingWithResponse(context)
 	if err != nil {
-		log.Panicf("Error pinging API: %v", err)
+		slog.Error("error pinging API", "error", err)
 		return nil, err
 	}
-	// TODO: Remove next line with debug? Health check?
-	log.Printf("API Ping Status: %s\n", resp.Status())
+	slog.Debug("api ping status", "status", resp.Status())
 	serverListMinimal, err := c.getServerListMinimal(context, respClient)
 	if err != nil {
-		log.Panicf("Error getting servers: %v", err)
+		slog.Error("error getting server list", "error", err)
 		return nil, err
 	}
 	var servers = make([]ServerInfo, len(*serverListMinimal))
 	for i, srv := range *serverListMinimal {
 		server, err := c.getServer(context, *srv.Id, respClient)
 		if err != nil {
-			log.Panicf("Error getting server %d: %v", srv.Id, err)
+			slog.Debug("error getting server", "serverId", *srv.Id, "error", err)
 			return nil, err
 		}
 		servers[i] = ServerInfo{Server: server}
@@ -63,7 +62,6 @@ func (c DefaultServerCollector) CollectServerData(context context.Context) ([]Se
 func (c DefaultServerCollector) getServerListMinimal(context context.Context, respClient *client.ClientWithResponses) (*[]client.ServerListMinimal, error) {
 	serversResp, err := respClient.GetApiV1ServersWithResponse(context, &client.GetApiV1ServersParams{})
 	if err != nil {
-		log.Panicf("Error getting servers: %v", err)
 		return nil, err
 	}
 	return serversResp.JSON200, nil
@@ -72,7 +70,6 @@ func (c DefaultServerCollector) getServerListMinimal(context context.Context, re
 func (c DefaultServerCollector) getServer(context context.Context, serverId int32, respClient *client.ClientWithResponses) (*client.Server, error) {
 	server, err := respClient.GetApiV1ServersServerIdWithResponse(context, serverId, &client.GetApiV1ServersServerIdParams{})
 	if err != nil {
-		log.Panicf("Error getting server %d: %v", serverId, err)
 		return nil, err
 	}
 	return server.JSON200, nil

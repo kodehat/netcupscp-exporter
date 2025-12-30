@@ -2,8 +2,7 @@ package authenticator
 
 import (
 	"context"
-	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/zitadel/oidc/v3/pkg/client/rp"
@@ -40,17 +39,20 @@ func NewDefaultAuthenticator(accessToken, refreshToken string) DefaultAuthentica
 func (a DefaultAuthenticator) newDeviceAuth(context context.Context, provider rp.RelyingParty) (*AuthData, error) {
 	resp, err := rp.DeviceAuthorization(context, a.scopes, provider, nil)
 	if err != nil {
-		log.Fatalf("Error during device authorization: %v", err)
+		slog.Error("error during device authorization", "error", err)
 		return nil, err
 	}
-	fmt.Printf("\nPlease browse to %s and enter code %s\n", resp.VerificationURI, resp.UserCode)
+	slog.Info("complete device authorization using given uri and code", "verification_uri", resp.VerificationURI, "user_code", resp.UserCode)
 	token, err := rp.DeviceAccessToken(context, resp.DeviceCode, time.Duration(resp.Interval)*time.Second, provider)
 	if err != nil {
-		log.Fatalf("Error getting access token: %v", err)
+		slog.Error("error getting access token", "error", err)
 		return nil, err
 	}
-	fmt.Printf("Access Token: %s\n", token.AccessToken)
-	fmt.Printf("Refresh Token: %s\n", token.RefreshToken)
+	if token.AccessToken == "" || token.RefreshToken == "" {
+		slog.Error("received empty access token or refresh token during device authorization")
+		return nil, err
+	}
+	slog.Debug("successfully obtained access token and refresh token via device authorization")
 	return &AuthData{
 		AccessToken:  token.AccessToken,
 		refreshToken: token.RefreshToken,
@@ -60,7 +62,7 @@ func (a DefaultAuthenticator) newDeviceAuth(context context.Context, provider rp
 func (a DefaultAuthenticator) refreshTokenAuth(context context.Context, provider rp.RelyingParty) (*AuthData, error) {
 	token, err := rp.RefreshTokens[*oidc.IDTokenClaims](context, provider, a.AuthData.refreshToken, "", "")
 	if err != nil {
-		log.Fatalf("Error refreshing token: %v", err)
+		slog.Error("error refreshing token", "error", err)
 		return nil, err
 	}
 	return &AuthData{
@@ -72,7 +74,7 @@ func (a DefaultAuthenticator) refreshTokenAuth(context context.Context, provider
 func (a DefaultAuthenticator) Authenticate(context context.Context) (*AuthData, error) {
 	provider, err := rp.NewRelyingPartyOIDC(context, a.issuer, a.clientId, "", "", a.scopes)
 	if err != nil {
-		log.Fatalf("Error creating OIDC provider: %v", err)
+		slog.Error("error creating OIDC provider", "error", err)
 	}
 	if a.AuthData.refreshToken == "" {
 		return a.newDeviceAuth(context, provider)
