@@ -10,6 +10,8 @@ import (
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/securityprovider"
 )
 
+const scpBaseUrl = "https://servercontrolpanel.de/scp-core"
+
 type DefaultServerCollector struct {
 	AuthData   *authenticator.AuthData
 	httpClient http.Client
@@ -30,8 +32,7 @@ func (c DefaultServerCollector) CollectServerData(context context.Context) ([]Se
 		slog.Error("error creating bearer auth", "error", err)
 		return nil, err
 	}
-	// TODO: Generate API with url.
-	respClient, err := client.NewClientWithResponses("https://servercontrolpanel.de/scp-core", client.WithHTTPClient(&c.httpClient), client.WithRequestEditorFn(bearerAuth.Intercept))
+	respClient, err := client.NewClientWithResponses(scpBaseUrl, client.WithHTTPClient(&c.httpClient), client.WithRequestEditorFn(bearerAuth.Intercept))
 	if err != nil {
 		slog.Error("error creating client", "error", err)
 		return nil, err
