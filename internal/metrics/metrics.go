@@ -1,8 +1,18 @@
 package metrics
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"github.com/kodehat/netcupscp-exporter/internal/build"
+	"github.com/prometheus/client_golang/prometheus"
+)
 
 var (
+	buildInfo = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "scp",
+			Name:      "build_info",
+			Help:      "A metric with a constant '1' value labeled by goversion, revision and version from which netcupscp-exporter was built",
+		},
+		[]string{"goversion", "revision", "version"})
 	cpuCores = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: "scp",
@@ -14,42 +24,42 @@ var (
 		prometheus.GaugeOpts{
 			Namespace: "scp",
 			Name:      "memory_bytes",
-			Help:      "Amount of Memory in Bytes",
+			Help:      "Amount of memory in bytes",
 		},
 		[]string{"vserver", "nickname"})
 	monthlyTrafficIn = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: "scp",
 			Name:      "monthlytraffic_in_bytes",
-			Help:      "Monthly traffic incoming in Bytes (only gigabyte-level resolution)",
+			Help:      "Monthly traffic incoming in bytes (only gigabyte-level resolution)",
 		},
 		[]string{"vserver", "nickname", "month", "year", "mac"})
 	monthlyTrafficOut = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: "scp",
 			Name:      "monthlytraffic_out_bytes",
-			Help:      "Monthly traffic outgoing in Bytes (only gigabyte-level resolution)",
+			Help:      "Monthly traffic outgoing in bytes",
 		},
 		[]string{"vserver", "nickname", "month", "year", "mac"})
 	monthlyTrafficTotal = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: "scp",
 			Name:      "monthlytraffic_total_bytes",
-			Help:      "Total monthly traffic in Bytes (only gigabyte-level resolution)",
+			Help:      "Total monthly traffic in bytes",
 		},
 		[]string{"vserver", "nickname", "month", "year", "mac"})
 	serverStartTimeSeconds = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: "scp",
 			Name:      "server_start_time_seconds",
-			Help:      "Start time of the vserver in seconds (only minute-level resolution)",
+			Help:      "Start time of the vserver in seconds",
 		},
 		[]string{"vserver", "nickname"})
 	serverIpInfo = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: "scp",
 			Name:      "ip_info",
-			Help:      "IPs assigned to this server",
+			Help:      "Ip addresses assigned to this server",
 		},
 		[]string{"vserver", "nickname", "mac", "ip", "type"})
 	ifaceThrottled = prometheus.NewGaugeVec(
@@ -84,14 +94,14 @@ var (
 		prometheus.GaugeOpts{
 			Namespace: "scp",
 			Name:      "disk_capacity_bytes",
-			Help:      "Available storage space in Bytes",
+			Help:      "Available storage space in bytes",
 		},
 		[]string{"vserver", "nickname", "driver", "name"})
 	diskUsed = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: "scp",
 			Name:      "disk_used_bytes",
-			Help:      "Used storage space in Bytes",
+			Help:      "Used storage space in bytes",
 		},
 		[]string{"vserver", "nickname", "driver", "name"})
 	diskOptimization = prometheus.NewGaugeVec(
@@ -104,6 +114,12 @@ var (
 )
 
 func init() {
+	buildInfo.With(prometheus.Labels{
+		"goversion": build.GoVersion,
+		"revision":  build.CommitHash,
+		"version":   build.Version,
+	}).Set(1)
+	prometheus.MustRegister(buildInfo)
 	prometheus.MustRegister(cpuCores)
 	prometheus.MustRegister(memory)
 	prometheus.MustRegister(monthlyTrafficIn)
