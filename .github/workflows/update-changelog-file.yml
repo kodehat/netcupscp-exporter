@@ -1,0 +1,34 @@
+name: Update changelog file
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  changelog:
+    name: Generate and update changelog
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      with:
+        # See: https://github.com/orgs/community/discussions/25305#discussioncomment-10728028
+        ssh-key: ${{ secrets.REPO_UPDATE_KEY }}
+        ref: 'main'
+        fetch-depth: 0
+
+    - name: Generate a changelog
+      uses: orhun/git-cliff-action@e16f179f0be49ecdfe63753837f20b9531642772 # v4.7.0
+      with:
+        config: cliff.toml
+        args: --tag "${{ github.ref_name }}" --exclude-path "CHANGELOG.md"
+      env:
+        OUTPUT: CHANGELOG.md
+
+    - name: Commit and push changelog
+      run: |
+        git config user.name 'github-actions[bot]'
+        git config user.email 'github-actions[bot]@users.noreply.github.com'
+        git add CHANGELOG.md
+        git commit -m "ci: update changelog"
+        git push

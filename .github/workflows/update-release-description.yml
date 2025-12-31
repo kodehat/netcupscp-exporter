@@ -1,0 +1,33 @@
+name: Update release description
+
+on: 
+  release:
+    types: [ created ]
+
+jobs:
+
+  release-description:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Checkout
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      with:
+        fetch-depth: 0
+
+    - name: Generate a changelog
+      uses: orhun/git-cliff-action@e16f179f0be49ecdfe63753837f20b9531642772 # v4.7.0
+      with:
+        config: cliff.toml
+        # Always using latest here instead of specific tag only until implemented.
+        # See: https://github.com/orhun/git-cliff/issues/1133
+        args: --latest --strip "header" --exclude-path "CHANGELOG.md"
+      env:
+        OUTPUT: CHANGELOG.md
+
+    - name: Update release description
+      uses: ncipollo/release-action@b7eabc95ff50cbeeedec83973935c8f306dfcd0b # v1.20.0
+      with:
+        allowUpdates: true
+        bodyFile: CHANGELOG.md
