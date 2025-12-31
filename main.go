@@ -18,6 +18,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+var metricRefreshInterval = 30 * time.Second
+
 func main() {
 	ctx := context.Background()
 	flags.Load()
@@ -45,7 +47,7 @@ func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, stderr io.
 	registry := metrics.Load()
 
 	metricsUpdater := metrics.NewMetricsUpdater(authData)
-	go metricsUpdater.UpdateMetricsPeriodically(ctx, 10*time.Second)
+	go metricsUpdater.UpdateMetricsPeriodically(ctx, metricRefreshInterval)
 
 	// Create http server for Prometheus metrics.
 	httpServer := &http.Server{
