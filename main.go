@@ -41,13 +41,16 @@ func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, stderr io.
 		fmt.Fprintf(stderr, "error during authentication: %s\n", err)
 		return err
 	}
+
+	registry := metrics.Load()
+
 	metricsUpdater := metrics.NewMetricsUpdater(authData)
 	go metricsUpdater.UpdateMetricsPeriodically(ctx, 10*time.Second)
 
 	// Create http server for Prometheus metrics.
 	httpServer := &http.Server{
 		Addr:    net.JoinHostPort(flags.Host, flags.Port),
-		Handler: promhttp.Handler(),
+		Handler: promhttp.HandlerFor(registry, promhttp.HandlerOpts{EnableOpenMetrics: true}),
 	}
 
 	go func() {

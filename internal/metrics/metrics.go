@@ -3,6 +3,7 @@ package metrics
 import (
 	"github.com/kodehat/netcupscp-exporter/internal/build"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 )
 
 var (
@@ -113,25 +114,33 @@ var (
 		[]string{"vserver", "nickname"})
 )
 
-func init() {
+func Load() *prometheus.Registry {
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(
+		collectors.NewGoCollector(),
+		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+		buildInfo,
+		cpuCores,
+		memory,
+		monthlyTrafficIn,
+		monthlyTrafficOut,
+		monthlyTrafficTotal,
+		serverStartTimeSeconds,
+		serverIpInfo,
+		ifaceThrottled,
+		serverStatus,
+		rescueActive,
+		rebootRecommended,
+		diskCapacity,
+		diskUsed,
+		diskOptimization,
+	)
+
 	buildInfo.With(prometheus.Labels{
 		"goversion": build.GoVersion,
 		"revision":  build.CommitHash,
 		"version":   build.Version,
 	}).Set(1)
-	prometheus.MustRegister(buildInfo)
-	prometheus.MustRegister(cpuCores)
-	prometheus.MustRegister(memory)
-	prometheus.MustRegister(monthlyTrafficIn)
-	prometheus.MustRegister(monthlyTrafficOut)
-	prometheus.MustRegister(monthlyTrafficTotal)
-	prometheus.MustRegister(serverStartTimeSeconds)
-	prometheus.MustRegister(serverIpInfo)
-	prometheus.MustRegister(ifaceThrottled)
-	prometheus.MustRegister(serverStatus)
-	prometheus.MustRegister(rescueActive)
-	prometheus.MustRegister(rebootRecommended)
-	prometheus.MustRegister(diskCapacity)
-	prometheus.MustRegister(diskUsed)
-	prometheus.MustRegister(diskOptimization)
+
+	return registry
 }
