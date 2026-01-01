@@ -60,6 +60,18 @@ func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, _ io.Write
 		return nil
 	}
 
+	// Getting token details requires a valid access token.
+	if flags.GetTokenDetails {
+		logger.Info("getting token details as requested")
+		userInfo, err := authenticator.GetUserInfo(ctx)
+		if err != nil {
+			logger.Error("error getting token details", "error", err)
+			return err
+		}
+		logger.Info("token details obtained successfully", "name", userInfo.Name, "email", userInfo.Email, "username", userInfo.PreferredUsername)
+		return nil
+	}
+
 	registry := metrics.Load()
 
 	serverCollector := collector.NewDefaultServerCollector(authResult.AuthData)

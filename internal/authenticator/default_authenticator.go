@@ -25,7 +25,7 @@ type DefaultAuthenticator struct {
 	scopes   []string
 }
 
-var _ Authenticator = DefaultAuthenticator{}
+var _ Authenticator = &DefaultAuthenticator{}
 
 // NewDefaultAuthenticator creates a new DefaultAuthenticator with the given access and refresh tokens.
 // Refresh token can be empty, in which case new device authorization flow will be used.
@@ -41,7 +41,16 @@ func NewDefaultAuthenticator(accessToken, refreshToken string) DefaultAuthentica
 	}
 }
 
-func (a DefaultAuthenticator) newDeviceAuth(context context.Context, provider rp.RelyingParty) (*AuthData, error) {
+func (a *DefaultAuthenticator) createOIDCProvider(context context.Context) (rp.RelyingParty, error) {
+	provider, err := rp.NewRelyingPartyOIDC(context, a.issuer, a.clientId, "", "", a.scopes)
+	if err != nil {
+		slog.Error("error creating OIDC provider", "error", err)
+		return nil, err
+	}
+	return provider, nil
+}
+
+func (a *DefaultAuthenticator) newDeviceAuth(context context.Context, provider rp.RelyingParty) (*AuthData, error) {
 	resp, err := rp.DeviceAuthorization(context, a.scopes, provider, nil)
 	if err != nil {
 		slog.Error("error during device authorization", "error", err)
@@ -64,7 +73,7 @@ func (a DefaultAuthenticator) newDeviceAuth(context context.Context, provider rp
 	}, nil
 }
 
-func (a DefaultAuthenticator) refreshTokenAuth(context context.Context, provider rp.RelyingParty) (*AuthData, error) {
+func (a *DefaultAuthenticator) refreshTokenAuth(context context.Context, provider rp.RelyingParty) (*AuthData, error) {
 	token, err := rp.RefreshTokens[*oidc.IDTokenClaims](context, provider, a.AuthData.RefreshToken, "", "")
 	if err != nil {
 		slog.Error("error refreshing token", "error", err)
@@ -74,24 +83,29 @@ func (a DefaultAuthenticator) refreshTokenAuth(context context.Context, provider
 	return &AuthData{
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
+		TokenType:    token.TokenType,
+		Expiry:       token.Expiry,
+		Subject:      token.IDTokenClaims.Subject,
 	}, nil
 }
 
-func (a DefaultAuthenticator) Authenticate(context context.Context) (*AuthResult, error) {
-	provider, err := rp.NewRelyingPartyOIDC(context, a.issuer, a.clientId, "", "", a.scopes)
+func (a *DefaultAuthenticator) Authenticate(ctx context.Context) (*AuthResult, error) {
+	provider, err := a.createOIDCProvider(ctx)
 	if err != nil {
-		slog.Error("error creating OIDC provider", "error", err)
+		return nil, err
 	}
+
 	// If refresh token is empty, use new device authorization flow.
 	if a.AuthData.RefreshToken == "" {
-		authData, err := a.newDeviceAuth(context, provider)
+		authData, err := a.newDeviceAuth(ctx, provider)
 		return &AuthResult{
 			AuthData:    authData,
 			IsNewDevice: true,
 		}, err
 	}
 	// Otherwise, use refresh token flow for existing device.
-	authData, err := a.refreshTokenAuth(context, provider)
+	authData, err := a.refreshTokenAuth(ctx, provider)
+	a.AuthData = authData
 	return &AuthResult{
 		AuthData:    authData,
 		IsNewDevice: false,
@@ -99,11 +113,11 @@ func (a DefaultAuthenticator) Authenticate(context context.Context) (*AuthResult
 }
 
 func (a DefaultAuthenticator) Revoke(ctx context.Context) error {
-	provider, err := rp.NewRelyingPartyOIDC(ctx, a.issuer, a.clientId, "", "", a.scopes)
+	provider, err := a.createOIDCProvider(ctx)
 	if err != nil {
-		slog.Error("error creating OIDC provider", "error", err)
 		return err
 	}
+
 	if a.AuthData.RefreshToken == "" {
 		return errors.New("no refresh token provided for revocation")
 	}
@@ -114,4 +128,20 @@ func (a DefaultAuthenticator) Revoke(ctx context.Context) error {
 	}
 	slog.Debug("successfully revoked refresh token")
 	return nil
+}
+
+func (a DefaultAuthenticator) GetUserInfo(ctx context.Context) (*UserInfo, error) {
+	provider, err := rp.NewRelyingPartyOIDC(ctx, a.issuer, "", "", "", nil)
+	if err != nil {
+		slog.Error("error creating OIDC provider", "error", err)
+		return nil, err
+	}
+
+	userInfo, err := rp.Userinfo[*oidc.UserInfo](ctx, a.AuthData.AccessToken, a.AuthData.TokenType, a.AuthData.Subject, provider)
+	if err != nil {
+		slog.Error("error getting user info", "error", err)
+		return nil, err
+	}
+	slog.Debug("successfully obtained user info")
+	return &UserInfo{userInfo}, nil
 }
