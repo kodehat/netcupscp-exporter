@@ -1,0 +1,6 @@
+{
+  "sonarlint.connectedMode.project": {
+    "connectionId": "kodehat-github",
+    "projectKey": "kodehat_netcupscp-exporter"
+  }
+}
