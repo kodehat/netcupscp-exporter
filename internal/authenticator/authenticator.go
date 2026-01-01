@@ -16,7 +16,6 @@ type AuthData struct {
 }
 
 type AuthResult struct {
-	AuthData    *AuthData
 	IsNewDevice bool
 }
 
@@ -26,6 +25,8 @@ type UserInfo struct {
 
 type Authenticator interface {
 	Authenticate(context.Context) (*AuthResult, error)
+	GetAuthData() *AuthData
 	Revoke(context.Context) error
 	GetUserInfo(context.Context) (*UserInfo, error)
+	IsAuthenticationExpired() bool
 }

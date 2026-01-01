@@ -3,7 +3,6 @@ package metrics
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/kodehat/netcupscp-exporter/internal/client"
@@ -27,30 +26,6 @@ var _ MetricsUpdater = DefaultMetricsUpdater{}
 func NewDefaultMetricsUpdater(collector collector.ServerCollector) *DefaultMetricsUpdater {
 	return &DefaultMetricsUpdater{
 		collector: collector,
-	}
-}
-
-func (mu DefaultMetricsUpdater) UpdateMetricsPeriodically(context context.Context, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-	slog.Info("starting periodic metrics update", "interval", interval.String())
-	metricsUpdateFunc := func() {
-		err := mu.UpdateMetrics(context)
-		if err != nil {
-			slog.Error("error while updating metrics", "error", err)
-		} else {
-			slog.Debug("metrics have been updated successfully")
-		}
-	}
-	metricsUpdateFunc() // Run once immediately.
-	for {
-		select {
-		case <-ticker.C:
-			metricsUpdateFunc()
-		case <-context.Done():
-			slog.Debug("stopping updating metrics")
-			return
-		}
 	}
 }
 

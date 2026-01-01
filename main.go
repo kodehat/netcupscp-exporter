@@ -16,6 +16,7 @@ import (
 	"github.com/kodehat/netcupscp-exporter/internal/collector"
 	"github.com/kodehat/netcupscp-exporter/internal/flags"
 	"github.com/kodehat/netcupscp-exporter/internal/metrics"
+	"github.com/kodehat/netcupscp-exporter/internal/refresher"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -38,10 +39,10 @@ func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, _ io.Write
 	logger := slog.New(flags.GetLogHandler(stdout))
 	slog.SetDefault(logger)
 
-	authenticator := authenticator.NewDefaultAuthenticator("", flags.RefreshToken)
+	defaultAuthenticator := authenticator.NewDefaultAuthenticator("", flags.RefreshToken)
 	if flags.RevokeToken {
 		logger.Info("revoking refresh token as requested")
-		err := authenticator.Revoke(ctx)
+		err := defaultAuthenticator.Revoke(ctx)
 		if err != nil {
 			logger.Error("error revoking refresh token", "error", err)
 			return err
@@ -49,13 +50,14 @@ func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, _ io.Write
 		logger.Info("successfully revoked refresh token, the application will now exit")
 		return nil
 	}
-	authResult, err := authenticator.Authenticate(ctx)
+	authResult, err := defaultAuthenticator.Authenticate(ctx)
 	if err != nil {
 		logger.Error("error during authentication", "error", err)
 		return err
 	}
 	if authResult.IsNewDevice {
-		logger.Warn("first-time setup: obtained new refresh token, please store it for future use", "refresh_token", authResult.AuthData.RefreshToken)
+		authData := defaultAuthenticator.GetAuthData()
+		logger.Warn("first-time setup: obtained new refresh token, please store it for future use", "refresh_token", authData.RefreshToken)
 		logger.Info("the application will now exit, please restart it with the new refresh token")
 		return nil
 	}
@@ -63,7 +65,7 @@ func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, _ io.Write
 	// Getting token details requires a valid access token.
 	if flags.GetTokenDetails {
 		logger.Info("getting token details as requested")
-		userInfo, err := authenticator.GetUserInfo(ctx)
+		userInfo, err := defaultAuthenticator.GetUserInfo(ctx)
 		if err != nil {
 			logger.Error("error getting token details", "error", err)
 			return err
@@ -74,10 +76,12 @@ func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, _ io.Write
 
 	registry := metrics.Load()
 
-	serverCollector := collector.NewDefaultServerCollector(authResult.AuthData)
+	serverCollector := collector.NewDefaultServerCollector(defaultAuthenticator)
 	metricsUpdater := metrics.NewDefaultMetricsUpdater(serverCollector)
+	refresher := refresher.NewDefaultRefresher(defaultAuthenticator, metricsUpdater, metricRefreshInterval)
 
-	go metricsUpdater.UpdateMetricsPeriodically(ctx, metricRefreshInterval)
+	// Start periodic metrics refresh (including refreshing authentication) in a separate goroutine.
+	go refresher.StartRefreshMetricsPeriodically(ctx)
 
 	// Create http server for Prometheus metrics.
 	mux := http.NewServeMux()
