@@ -39,6 +39,16 @@ func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, _ io.Write
 	slog.SetDefault(logger)
 
 	authenticator := authenticator.NewDefaultAuthenticator("", flags.RefreshToken)
+	if flags.RevokeToken {
+		logger.Info("revoking refresh token as requested")
+		err := authenticator.Revoke(ctx)
+		if err != nil {
+			logger.Error("error revoking refresh token", "error", err)
+			return err
+		}
+		logger.Info("successfully revoked refresh token, the application will now exit")
+		return nil
+	}
 	authResult, err := authenticator.Authenticate(ctx)
 	if err != nil {
 		logger.Error("error during authentication", "error", err)
@@ -58,9 +68,14 @@ func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, _ io.Write
 	go metricsUpdater.UpdateMetricsPeriodically(ctx, metricRefreshInterval)
 
 	// Create http server for Prometheus metrics.
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{EnableOpenMetrics: true}))
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.NotFound(w, r)
+	})
 	httpServer := &http.Server{
 		Addr:    net.JoinHostPort(flags.Host, flags.Port),
-		Handler: promhttp.HandlerFor(registry, promhttp.HandlerOpts{EnableOpenMetrics: true}),
+		Handler: mux,
 	}
 
 	go func() {

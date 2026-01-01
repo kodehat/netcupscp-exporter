@@ -2,6 +2,7 @@ package authenticator
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
@@ -14,6 +15,8 @@ var (
 	netcupClientId = "scp"
 	netcupScopes   = []string{"offline_access", "openid"}
 )
+
+const refreshTokenTypeHint = "refresh_token"
 
 type DefaultAuthenticator struct {
 	AuthData *AuthData
@@ -67,6 +70,7 @@ func (a DefaultAuthenticator) refreshTokenAuth(context context.Context, provider
 		slog.Error("error refreshing token", "error", err)
 		return nil, err
 	}
+	slog.Debug("successfully refreshed access token using refresh token")
 	return &AuthData{
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
@@ -92,4 +96,22 @@ func (a DefaultAuthenticator) Authenticate(context context.Context) (*AuthResult
 		AuthData:    authData,
 		IsNewDevice: false,
 	}, err
+}
+
+func (a DefaultAuthenticator) Revoke(ctx context.Context) error {
+	provider, err := rp.NewRelyingPartyOIDC(ctx, a.issuer, a.clientId, "", "", a.scopes)
+	if err != nil {
+		slog.Error("error creating OIDC provider", "error", err)
+		return err
+	}
+	if a.AuthData.RefreshToken == "" {
+		return errors.New("no refresh token provided for revocation")
+	}
+	err = rp.RevokeToken(ctx, provider, a.AuthData.RefreshToken, refreshTokenTypeHint)
+	if err != nil {
+		slog.Error("error revoking refresh token", "error", err)
+		return err
+	}
+	slog.Debug("successfully revoked refresh token")
+	return nil
 }

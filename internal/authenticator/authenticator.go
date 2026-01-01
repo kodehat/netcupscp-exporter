@@ -14,4 +14,5 @@ type AuthResult struct {
 
 type Authenticator interface {
 	Authenticate(context.Context) (*AuthResult, error)
+	Revoke(context.Context) error
 }
