@@ -22,13 +22,15 @@ type DefaultAuthenticator struct {
 	scopes   []string
 }
 
+var _ Authenticator = DefaultAuthenticator{}
+
 // NewDefaultAuthenticator creates a new DefaultAuthenticator with the given access and refresh tokens.
 // Refresh token can be empty, in which case new device authorization flow will be used.
 func NewDefaultAuthenticator(accessToken, refreshToken string) DefaultAuthenticator {
 	return DefaultAuthenticator{
 		AuthData: &AuthData{
 			AccessToken:  accessToken,
-			refreshToken: refreshToken,
+			RefreshToken: refreshToken,
 		},
 		issuer:   netcupIssuer,
 		clientId: netcupClientId,
@@ -55,29 +57,39 @@ func (a DefaultAuthenticator) newDeviceAuth(context context.Context, provider rp
 	slog.Debug("successfully obtained access token and refresh token via device authorization")
 	return &AuthData{
 		AccessToken:  token.AccessToken,
-		refreshToken: token.RefreshToken,
+		RefreshToken: token.RefreshToken,
 	}, nil
 }
 
 func (a DefaultAuthenticator) refreshTokenAuth(context context.Context, provider rp.RelyingParty) (*AuthData, error) {
-	token, err := rp.RefreshTokens[*oidc.IDTokenClaims](context, provider, a.AuthData.refreshToken, "", "")
+	token, err := rp.RefreshTokens[*oidc.IDTokenClaims](context, provider, a.AuthData.RefreshToken, "", "")
 	if err != nil {
 		slog.Error("error refreshing token", "error", err)
 		return nil, err
 	}
 	return &AuthData{
 		AccessToken:  token.AccessToken,
-		refreshToken: token.RefreshToken,
+		RefreshToken: token.RefreshToken,
 	}, nil
 }
 
-func (a DefaultAuthenticator) Authenticate(context context.Context) (*AuthData, error) {
+func (a DefaultAuthenticator) Authenticate(context context.Context) (*AuthResult, error) {
 	provider, err := rp.NewRelyingPartyOIDC(context, a.issuer, a.clientId, "", "", a.scopes)
 	if err != nil {
 		slog.Error("error creating OIDC provider", "error", err)
 	}
-	if a.AuthData.refreshToken == "" {
-		return a.newDeviceAuth(context, provider)
+	// If refresh token is empty, use new device authorization flow.
+	if a.AuthData.RefreshToken == "" {
+		authData, err := a.newDeviceAuth(context, provider)
+		return &AuthResult{
+			AuthData:    authData,
+			IsNewDevice: true,
+		}, err
 	}
-	return a.refreshTokenAuth(context, provider)
+	// Otherwise, use refresh token flow for existing device.
+	authData, err := a.refreshTokenAuth(context, provider)
+	return &AuthResult{
+		AuthData:    authData,
+		IsNewDevice: false,
+	}, err
 }

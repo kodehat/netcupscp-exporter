@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/kodehat/netcupscp-exporter/internal/authenticator"
+	"github.com/kodehat/netcupscp-exporter/internal/collector"
 	"github.com/kodehat/netcupscp-exporter/internal/flags"
 	"github.com/kodehat/netcupscp-exporter/internal/metrics"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -30,7 +31,7 @@ func main() {
 	}
 }
 
-func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, stderr io.Writer) error {
+func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, _ io.Writer) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
@@ -38,15 +39,22 @@ func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, stderr io.
 	slog.SetDefault(logger)
 
 	authenticator := authenticator.NewDefaultAuthenticator("", flags.RefreshToken)
-	authData, err := authenticator.Authenticate(ctx)
+	authResult, err := authenticator.Authenticate(ctx)
 	if err != nil {
-		fmt.Fprintf(stderr, "error during authentication: %s\n", err)
+		logger.Error("error during authentication", "error", err)
 		return err
+	}
+	if authResult.IsNewDevice {
+		logger.Warn("first-time setup: obtained new refresh token, please store it for future use", "refresh_token", authResult.AuthData.RefreshToken)
+		logger.Info("the application will now exit, please restart it with the new refresh token")
+		return nil
 	}
 
 	registry := metrics.Load()
 
-	metricsUpdater := metrics.NewMetricsUpdater(authData)
+	serverCollector := collector.NewDefaultServerCollector(authResult.AuthData)
+	metricsUpdater := metrics.NewDefaultMetricsUpdater(serverCollector)
+
 	go metricsUpdater.UpdateMetricsPeriodically(ctx, metricRefreshInterval)
 
 	// Create http server for Prometheus metrics.
@@ -58,17 +66,17 @@ func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, stderr io.
 	go func() {
 		logger.Info("server is now accepting connections", "address", httpServer.Addr)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			fmt.Fprintf(stderr, "error listening and serving: %s\n", err)
+			logger.Error("error listening and serving", "error", err)
 		}
 	}()
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		<-ctx.Done()
-		// Make a new context for the shutdown.
+		// Use a new context for shutdown.
 		shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
-			fmt.Fprintf(stderr, "error shutting down http server: %s\n", err)
+			logger.Error("error shutting down http server", "error", err)
 		}
 	})
 	wg.Wait()

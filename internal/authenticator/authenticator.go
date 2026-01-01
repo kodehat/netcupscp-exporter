@@ -1,10 +1,17 @@
 package authenticator
 
+import "context"
+
 type AuthData struct {
 	AccessToken  string
-	refreshToken string
+	RefreshToken string
+}
+
+type AuthResult struct {
+	AuthData    *AuthData
+	IsNewDevice bool
 }
 
 type Authenticator interface {
-	Authenticate() (*AuthData, error)
+	Authenticate(context.Context) (*AuthResult, error)
 }
