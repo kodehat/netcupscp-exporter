@@ -1,3 +1,3 @@
 #!/bin/sh
 
-docker build -t netcupscp-exporter:dev --force-rm --progress=plain .
+docker build -t codehat/netcupscp-exporter:local --force-rm --progress=plain .
