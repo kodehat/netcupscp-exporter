@@ -97,7 +97,11 @@ func (a *DefaultAuthenticator) Authenticate(ctx context.Context) (*AuthResult, e
 
 	// If refresh token is empty, use new device authorization flow.
 	if a.authData.RefreshToken == "" {
-		_, err := a.newDeviceAuth(ctx, provider)
+		authData, err := a.newDeviceAuth(ctx, provider)
+
+		// Update stored auth data.
+		a.authData = authData
+
 		return &AuthResult{
 			IsNewDevice: true,
 		}, err
