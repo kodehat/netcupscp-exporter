@@ -151,8 +151,9 @@ func (a *DefaultAuthenticator) GetUserInfo(ctx context.Context) (*UserInfo, erro
 	return &UserInfo{userInfo}, nil
 }
 
-func (a *DefaultAuthenticator) IsAuthenticationExpired() bool {
-	return time.Now().After(a.authData.Expiry)
+func (a *DefaultAuthenticator) IsAuthenticationExpired() (expired bool, now, expiry time.Time) {
+	now = time.Now()
+	return now.After(a.authData.Expiry), now, a.authData.Expiry
 }
 
 func (a *DefaultAuthenticator) GetAuthData() *AuthData {

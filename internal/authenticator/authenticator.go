@@ -28,5 +28,5 @@ type Authenticator interface {
 	GetAuthData() *AuthData
 	Revoke(context.Context) error
 	GetUserInfo(context.Context) (*UserInfo, error)
-	IsAuthenticationExpired() bool
+	IsAuthenticationExpired() (bool, time.Time, time.Time)
 }
