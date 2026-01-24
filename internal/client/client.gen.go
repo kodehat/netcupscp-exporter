@@ -17,10 +17,6 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
-const (
-	AuthorizationScopes = "Authorization.Scopes"
-)
-
 // Defines values for Architecture.
 const (
 	AMD64 Architecture = "AMD64"
@@ -205,7 +201,7 @@ type FirewallAction string
 // FirewallPolicy defines model for FirewallPolicy.
 type FirewallPolicy struct {
 	CountOfAffectedServers *int32          `json:"countOfAffectedServers,omitempty"`
-	Description            *string         `json:"description,omitempty"`
+	Description            *string         `json:"description"`
 	Id                     *int32          `json:"id,omitempty"`
 	Name                   *string         `json:"name,omitempty"`
 	Rules                  *[]FirewallRule `json:"rules,omitempty"`
@@ -230,7 +226,7 @@ type FirewallProtocol string
 // FirewallRule defines model for FirewallRule.
 type FirewallRule struct {
 	Action      FirewallAction `json:"action"`
-	Description *string        `json:"description,omitempty"`
+	Description *string        `json:"description"`
 
 	// DestinationPorts Valid configurations are any port (null), single port (f.e. 1234) or port range (f.e. 1024-65535).
 	DestinationPorts *string `json:"destinationPorts,omitempty"`
@@ -261,8 +257,8 @@ type GuestAgentData struct {
 
 // IPv4AddressMinimal defines model for IPv4AddressMinimal.
 type IPv4AddressMinimal struct {
-	Broadcast *string `json:"broadcast,omitempty"`
-	Gateway   *string `json:"gateway,omitempty"`
+	Broadcast *string `json:"broadcast"`
+	Gateway   *string `json:"gateway"`
 	Id        *int32  `json:"id,omitempty"`
 	Ip        *string `json:"ip,omitempty"`
 	Netmask   *string `json:"netmask,omitempty"`
@@ -270,7 +266,7 @@ type IPv4AddressMinimal struct {
 
 // IPv6AddressMinimal defines model for IPv6AddressMinimal.
 type IPv6AddressMinimal struct {
-	Gateway             *string `json:"gateway,omitempty"`
+	Gateway             *string `json:"gateway"`
 	Id                  *int32  `json:"id,omitempty"`
 	NetworkPrefix       *string `json:"networkPrefix,omitempty"`
 	NetworkPrefixLength *int32  `json:"networkPrefixLength,omitempty"`
@@ -310,14 +306,14 @@ type Interface struct {
 
 // Iso defines model for Iso.
 type Iso struct {
-	Iso         *string `json:"iso,omitempty"`
+	Iso         *string `json:"iso"`
 	IsoAttached *bool   `json:"isoAttached,omitempty"`
 }
 
 // IsoImage defines model for IsoImage.
 type IsoImage struct {
 	Architecture Architecture `json:"architecture"`
-	Description  *string      `json:"description,omitempty"`
+	Description  *string      `json:"description"`
 	Id           *int32       `json:"id,omitempty"`
 	Name         string       `json:"name"`
 }
@@ -352,20 +348,15 @@ type NotFoundError struct {
 // OsOptimization defines model for OsOptimization.
 type OsOptimization string
 
-// RdnsIpv4 defines model for RdnsIpv4.
-type RdnsIpv4 struct {
-	Rdns *string `json:"rdns,omitempty"`
-}
-
-// RdnsIpv6 defines model for RdnsIpv6.
-type RdnsIpv6 struct {
-	Rdns *map[string]string `json:"rdns,omitempty"`
+// Rdns defines model for Rdns.
+type Rdns struct {
+	Rdns *string `json:"rdns"`
 }
 
 // RescueSystemStatus defines model for RescueSystemStatus.
 type RescueSystemStatus struct {
 	Active   *bool   `json:"active,omitempty"`
-	Password *string `json:"password,omitempty"`
+	Password *string `json:"password"`
 }
 
 // ResponseError defines model for ResponseError.
@@ -419,7 +410,7 @@ type S3Upload struct {
 
 // SSHKey defines model for SSHKey.
 type SSHKey struct {
-	CreatedAt *time.Time `json:"createdAt,omitempty"`
+	CreatedAt *time.Time `json:"createdAt"`
 	Id        *int32     `json:"id,omitempty"`
 	Key       string     `json:"key"`
 	Name      string     `json:"name"`
@@ -430,19 +421,19 @@ type Server struct {
 	Architecture             *Architecture          `json:"architecture,omitempty"`
 	Disabled                 *bool                  `json:"disabled,omitempty"`
 	DisksAvailableSpaceInMiB *int64                 `json:"disksAvailableSpaceInMiB,omitempty"`
-	Hostname                 *string                `json:"hostname,omitempty"`
+	Hostname                 *string                `json:"hostname"`
 	Id                       *int32                 `json:"id,omitempty"`
 	Ipv4Addresses            *[]IPv4AddressMinimal  `json:"ipv4Addresses,omitempty"`
 	Ipv6Addresses            *[]IPv6AddressMinimal  `json:"ipv6Addresses,omitempty"`
 	MaxCpuCount              *int32                 `json:"maxCpuCount,omitempty"`
 	Name                     *string                `json:"name,omitempty"`
-	Nickname                 *string                `json:"nickname,omitempty"`
+	Nickname                 *string                `json:"nickname"`
 	RescueSystemActive       *bool                  `json:"rescueSystemActive,omitempty"`
-	ServerLiveInfo           *ServerInfo            `json:"serverLiveInfo,omitempty"`
+	ServerLiveInfo           *ServerInfo            `json:"serverLiveInfo"`
 	Site                     *Site                  `json:"site,omitempty"`
 	SnapshotAllowed          *bool                  `json:"snapshotAllowed,omitempty"`
 	SnapshotCount            *int32                 `json:"snapshotCount,omitempty"`
-	Template                 *ServerTemplateMinimal `json:"template,omitempty"`
+	Template                 *ServerTemplateMinimal `json:"template"`
 }
 
 // ServerAttachIso defines model for ServerAttachIso.
@@ -483,6 +474,7 @@ type ServerDisk struct {
 
 // ServerFirewall defines model for ServerFirewall.
 type ServerFirewall struct {
+	Active              *bool             `json:"active,omitempty"`
 	Consistent          *bool             `json:"consistent,omitempty"`
 	CopiedPolicies      *[]FirewallPolicy `json:"copiedPolicies,omitempty"`
 	EgressImplicitRule  *ImplicitRule     `json:"egressImplicitRule,omitempty"`
@@ -492,6 +484,8 @@ type ServerFirewall struct {
 
 // ServerFirewallSave defines model for ServerFirewallSave.
 type ServerFirewallSave struct {
+	// Active If not set, by default the firewall will be active.
+	Active         *bool           `json:"active,omitempty"`
 	CopiedPolicies []IdentifierInt `json:"copiedPolicies"`
 	UserPolicies   []IdentifierInt `json:"userPolicies"`
 }
@@ -503,18 +497,18 @@ type ServerHostnamePatch struct {
 
 // ServerImageSetup defines model for ServerImageSetup.
 type ServerImageSetup struct {
-	AdditionalUserPassword    *string  `json:"additionalUserPassword,omitempty"`
-	AdditionalUserUsername    *string  `json:"additionalUserUsername,omitempty"`
-	CustomScript              *string  `json:"customScript,omitempty"`
+	AdditionalUserPassword    *string  `json:"additionalUserPassword"`
+	AdditionalUserUsername    *string  `json:"additionalUserUsername"`
+	CustomScript              *string  `json:"customScript"`
 	DiskName                  *string  `json:"diskName,omitempty"`
-	EmailToExecutingUser      *bool    `json:"emailToExecutingUser,omitempty"`
-	Hostname                  *string  `json:"hostname,omitempty"`
+	EmailToExecutingUser      *bool    `json:"emailToExecutingUser"`
+	Hostname                  *string  `json:"hostname"`
 	ImageFlavourId            *int32   `json:"imageFlavourId,omitempty"`
-	Locale                    *string  `json:"locale,omitempty"`
+	Locale                    *string  `json:"locale"`
 	RootPartitionFullDiskSize *bool    `json:"rootPartitionFullDiskSize,omitempty"`
-	SshKeyIds                 *[]int32 `json:"sshKeyIds,omitempty"`
-	SshPasswordAuthentication *bool    `json:"sshPasswordAuthentication,omitempty"`
-	Timezone                  *string  `json:"timezone,omitempty"`
+	SshKeyIds                 *[]int32 `json:"sshKeyIds"`
+	SshPasswordAuthentication *bool    `json:"sshPasswordAuthentication"`
+	Timezone                  *string  `json:"timezone"`
 }
 
 // ServerInfo defines model for ServerInfo.
@@ -538,7 +532,7 @@ type ServerInfo struct {
 	RequiredStorageOptimization *StorageOptimization `json:"requiredStorageOptimization,omitempty"`
 	Sockets                     *int32               `json:"sockets,omitempty"`
 	State                       *ServerState         `json:"state,omitempty"`
-	Template                    *string              `json:"template,omitempty"`
+	Template                    *string              `json:"template"`
 	Uefi                        *bool                `json:"uefi,omitempty"`
 	UptimeInSeconds             *int32               `json:"uptimeInSeconds,omitempty"`
 }
@@ -570,22 +564,22 @@ type ServerIpType string
 // ServerIpv4 defines model for ServerIpv4.
 type ServerIpv4 struct {
 	Cidr          *string       `json:"cidr,omitempty"`
-	DestinationIp *string       `json:"destinationIp,omitempty"`
+	DestinationIp *string       `json:"destinationIp"`
 	Editable      *bool         `json:"editable,omitempty"`
-	Gateway       *string       `json:"gateway,omitempty"`
+	Gateway       *string       `json:"gateway"`
 	Id            *int32        `json:"id,omitempty"`
 	InterfaceMac  *string       `json:"interfaceMac,omitempty"`
 	Ip            *string       `json:"ip,omitempty"`
-	Rdns          *string       `json:"rdns,omitempty"`
+	Rdns          *string       `json:"rdns"`
 	Type          *ServerIpType `json:"type,omitempty"`
 }
 
 // ServerIpv6 defines model for ServerIpv6.
 type ServerIpv6 struct {
 	Cidr          *string            `json:"cidr,omitempty"`
-	DestinationIp *string            `json:"destinationIp,omitempty"`
+	DestinationIp *string            `json:"destinationIp"`
 	Editable      *bool              `json:"editable,omitempty"`
-	Gateway       *string            `json:"gateway,omitempty"`
+	Gateway       *string            `json:"gateway"`
 	Id            *int32             `json:"id,omitempty"`
 	InterfaceMac  *string            `json:"interfaceMac,omitempty"`
 	LinkLocal     *bool              `json:"linkLocal,omitempty"`
@@ -602,11 +596,11 @@ type ServerKeyboardLayoutPatch struct {
 // ServerListMinimal defines model for ServerListMinimal.
 type ServerListMinimal struct {
 	Disabled *bool                  `json:"disabled,omitempty"`
-	Hostname *string                `json:"hostname,omitempty"`
+	Hostname *string                `json:"hostname"`
 	Id       *int32                 `json:"id,omitempty"`
 	Name     *string                `json:"name,omitempty"`
-	Nickname *string                `json:"nickname,omitempty"`
-	Template *ServerTemplateMinimal `json:"template,omitempty"`
+	Nickname *string                `json:"nickname"`
+	Template *ServerTemplateMinimal `json:"template"`
 }
 
 // ServerMinimal defines model for ServerMinimal.
@@ -632,8 +626,8 @@ type ServerSetRootPasswordPatch struct {
 
 // ServerSnapshotCreate defines model for ServerSnapshotCreate.
 type ServerSnapshotCreate struct {
-	Description    *string `json:"description,omitempty"`
-	DiskName       *string `json:"diskName,omitempty"`
+	Description    *string `json:"description"`
+	DiskName       *string `json:"diskName"`
 	Name           string  `json:"name"`
 	OnlineSnapshot *bool   `json:"onlineSnapshot,omitempty"`
 }
@@ -669,8 +663,8 @@ type ServerUEFIPatch struct {
 
 // ServerUserImageSetup defines model for ServerUserImageSetup.
 type ServerUserImageSetup struct {
-	DiskName          *string `json:"diskName,omitempty"`
-	EmailNotification *bool   `json:"emailNotification,omitempty"`
+	DiskName          *string `json:"diskName"`
+	EmailNotification *bool   `json:"emailNotification"`
 	UserImageName     string  `json:"userImageName"`
 }
 
@@ -695,11 +689,11 @@ type Site struct {
 // Snapshot defines model for Snapshot.
 type Snapshot struct {
 	CreationTime      *time.Time       `json:"creationTime,omitempty"`
-	Description       *string          `json:"description,omitempty"`
+	Description       *string          `json:"description"`
 	Disks             *[]string        `json:"disks,omitempty"`
 	DownloadInfos     *S3DownloadInfos `json:"downloadInfos,omitempty"`
 	Exported          *bool            `json:"exported,omitempty"`
-	ExportedSizeInKiB *int64           `json:"exportedSizeInKiB,omitempty"`
+	ExportedSizeInKiB *int64           `json:"exportedSizeInKiB"`
 	Name              *string          `json:"name,omitempty"`
 	Online            *bool            `json:"online,omitempty"`
 	State             *ServerState     `json:"state,omitempty"`
@@ -709,10 +703,10 @@ type Snapshot struct {
 // SnapshotMinimal defines model for SnapshotMinimal.
 type SnapshotMinimal struct {
 	CreationTime      *time.Time   `json:"creationTime,omitempty"`
-	Description       *string      `json:"description,omitempty"`
+	Description       *string      `json:"description"`
 	Disks             *[]string    `json:"disks,omitempty"`
 	Exported          *bool        `json:"exported,omitempty"`
-	ExportedSizeInKiB *int64       `json:"exportedSizeInKiB,omitempty"`
+	ExportedSizeInKiB *int64       `json:"exportedSizeInKiB"`
 	Name              *string      `json:"name,omitempty"`
 	Online            *bool        `json:"online,omitempty"`
 	State             *ServerState `json:"state,omitempty"`
@@ -729,7 +723,7 @@ type StorageOptimization string
 type TaskInfo struct {
 	ExecutingUser *UserMinimal            `json:"executingUser,omitempty"`
 	FinishedAt    *time.Time              `json:"finishedAt,omitempty"`
-	Message       *string                 `json:"message,omitempty"`
+	Message       *string                 `json:"message"`
 	Name          *string                 `json:"name,omitempty"`
 	OnRollback    *bool                   `json:"onRollback,omitempty"`
 	ResponseError *ResponseError          `json:"responseError,omitempty"`
@@ -745,7 +739,7 @@ type TaskInfo struct {
 type TaskInfoMinimal struct {
 	ExecutingUser *UserMinimal  `json:"executingUser,omitempty"`
 	FinishedAt    *time.Time    `json:"finishedAt,omitempty"`
-	Message       *string       `json:"message,omitempty"`
+	Message       *string       `json:"message"`
 	Name          *string       `json:"name,omitempty"`
 	OnRollback    *bool         `json:"onRollback,omitempty"`
 	StartedAt     *time.Time    `json:"startedAt,omitempty"`
@@ -774,8 +768,8 @@ type TaskState string
 
 // User defines model for User.
 type User struct {
-	ApiIpLoginRestrictions *string `json:"apiIpLoginRestrictions,omitempty"`
-	Company                *string `json:"company,omitempty"`
+	ApiIpLoginRestrictions *string `json:"apiIpLoginRestrictions"`
+	Company                *string `json:"company"`
 	Email                  *string `json:"email,omitempty"`
 	Firstname              *string `json:"firstname,omitempty"`
 	Id                     *int32  `json:"id,omitempty"`
@@ -785,13 +779,13 @@ type User struct {
 	SecureMode             *bool   `json:"secureMode,omitempty"`
 	SecureModeAppAccess    *bool   `json:"secureModeAppAccess,omitempty"`
 	ShowNickname           *bool   `json:"showNickname,omitempty"`
-	TimeZone               *string `json:"timeZone,omitempty"`
+	TimeZone               *string `json:"timeZone"`
 	Username               *string `json:"username,omitempty"`
 }
 
 // UserMinimal defines model for UserMinimal.
 type UserMinimal struct {
-	Company   *string `json:"company,omitempty"`
+	Company   *string `json:"company"`
 	Email     *string `json:"email,omitempty"`
 	Firstname *string `json:"firstname,omitempty"`
 	Id        *int32  `json:"id,omitempty"`
@@ -804,20 +798,20 @@ type UserSave struct {
 	ApiIpLoginRestrictions *string `json:"apiIpLoginRestrictions,omitempty"`
 	Id                     *int32  `json:"id,omitempty"`
 	Language               string  `json:"language"`
-	OldPassword            *string `json:"oldPassword,omitempty"`
-	Password               *string `json:"password,omitempty"`
+	OldPassword            *string `json:"oldPassword"`
+	Password               *string `json:"password"`
 	PasswordlessMode       *bool   `json:"passwordlessMode,omitempty"`
 	SecureMode             *bool   `json:"secureMode,omitempty"`
 	SecureModeAppAccess    *bool   `json:"secureModeAppAccess,omitempty"`
 	ShowNickname           *bool   `json:"showNickname,omitempty"`
-	SoapWebservicePassword *string `json:"soapWebservicePassword,omitempty"`
+	SoapWebservicePassword *string `json:"soapWebservicePassword"`
 	TimeZone               string  `json:"timeZone"`
 }
 
 // VLan defines model for VLan.
 type VLan struct {
 	BandwidthClass *BandwidthClass `json:"bandwidthClass,omitempty"`
-	Name           *string         `json:"name,omitempty"`
+	Name           *string         `json:"name"`
 	Site           *Site           `json:"site,omitempty"`
 	User           *UserMinimal    `json:"user,omitempty"`
 	VlanId         *int32          `json:"vlanId,omitempty"`
@@ -7129,6 +7123,8 @@ func (r GetApiV1OpenapiResponse) StatusCode() int {
 type PostApiV1RdnsIpv4Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	HALJSON422   *ValidationError
+	JSON422      *ValidationError
 }
 
 // Status returns HTTPResponse.Status
@@ -7150,6 +7146,8 @@ func (r PostApiV1RdnsIpv4Response) StatusCode() int {
 type DeleteApiV1RdnsIpv4IpResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	HALJSON422   *ValidationError
+	JSON422      *ValidationError
 }
 
 // Status returns HTTPResponse.Status
@@ -7171,8 +7169,10 @@ func (r DeleteApiV1RdnsIpv4IpResponse) StatusCode() int {
 type GetApiV1RdnsIpv4IpResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	HALJSON200   *RdnsIpv4
-	JSON200      *RdnsIpv4
+	HALJSON200   *Rdns
+	JSON200      *Rdns
+	HALJSON422   *ValidationError
+	JSON422      *ValidationError
 }
 
 // Status returns HTTPResponse.Status
@@ -7194,6 +7194,8 @@ func (r GetApiV1RdnsIpv4IpResponse) StatusCode() int {
 type PostApiV1RdnsIpv6Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	HALJSON422   *ValidationError
+	JSON422      *ValidationError
 }
 
 // Status returns HTTPResponse.Status
@@ -7215,6 +7217,8 @@ func (r PostApiV1RdnsIpv6Response) StatusCode() int {
 type DeleteApiV1RdnsIpv6IpResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	HALJSON422   *ValidationError
+	JSON422      *ValidationError
 }
 
 // Status returns HTTPResponse.Status
@@ -7236,8 +7240,10 @@ func (r DeleteApiV1RdnsIpv6IpResponse) StatusCode() int {
 type GetApiV1RdnsIpv6IpResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	HALJSON200   *RdnsIpv6
-	JSON200      *RdnsIpv6
+	HALJSON200   *Rdns
+	JSON200      *Rdns
+	HALJSON422   *ValidationError
+	JSON422      *ValidationError
 }
 
 // Status returns HTTPResponse.Status
@@ -10118,6 +10124,23 @@ func ParsePostApiV1RdnsIpv4Response(rsp *http.Response) (*PostApiV1RdnsIpv4Respo
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case rsp.Header.Get("Content-Type") == "application/hal+json" && rsp.StatusCode == 422:
+		var dest ValidationError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.HALJSON422 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 422:
+		var dest ValidationError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -10132,6 +10155,23 @@ func ParseDeleteApiV1RdnsIpv4IpResponse(rsp *http.Response) (*DeleteApiV1RdnsIpv
 	response := &DeleteApiV1RdnsIpv4IpResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.Header.Get("Content-Type") == "application/hal+json" && rsp.StatusCode == 422:
+		var dest ValidationError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.HALJSON422 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 422:
+		var dest ValidationError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
 	}
 
 	return response, nil
@@ -10152,18 +10192,32 @@ func ParseGetApiV1RdnsIpv4IpResponse(rsp *http.Response) (*GetApiV1RdnsIpv4IpRes
 
 	switch {
 	case rsp.Header.Get("Content-Type") == "application/hal+json" && rsp.StatusCode == 200:
-		var dest RdnsIpv4
+		var dest Rdns
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.HALJSON200 = &dest
 
+	case rsp.Header.Get("Content-Type") == "application/hal+json" && rsp.StatusCode == 422:
+		var dest ValidationError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.HALJSON422 = &dest
+
 	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 200:
-		var dest RdnsIpv4
+		var dest Rdns
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 422:
+		var dest ValidationError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
 
 	}
 
@@ -10183,6 +10237,23 @@ func ParsePostApiV1RdnsIpv6Response(rsp *http.Response) (*PostApiV1RdnsIpv6Respo
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case rsp.Header.Get("Content-Type") == "application/hal+json" && rsp.StatusCode == 422:
+		var dest ValidationError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.HALJSON422 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 422:
+		var dest ValidationError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -10197,6 +10268,23 @@ func ParseDeleteApiV1RdnsIpv6IpResponse(rsp *http.Response) (*DeleteApiV1RdnsIpv
 	response := &DeleteApiV1RdnsIpv6IpResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.Header.Get("Content-Type") == "application/hal+json" && rsp.StatusCode == 422:
+		var dest ValidationError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.HALJSON422 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 422:
+		var dest ValidationError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
 	}
 
 	return response, nil
@@ -10217,18 +10305,32 @@ func ParseGetApiV1RdnsIpv6IpResponse(rsp *http.Response) (*GetApiV1RdnsIpv6IpRes
 
 	switch {
 	case rsp.Header.Get("Content-Type") == "application/hal+json" && rsp.StatusCode == 200:
-		var dest RdnsIpv6
+		var dest Rdns
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.HALJSON200 = &dest
 
+	case rsp.Header.Get("Content-Type") == "application/hal+json" && rsp.StatusCode == 422:
+		var dest ValidationError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.HALJSON422 = &dest
+
 	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 200:
-		var dest RdnsIpv6
+		var dest Rdns
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 422:
+		var dest ValidationError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
 
 	}
 
