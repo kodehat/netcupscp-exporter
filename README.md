@@ -2,26 +2,7 @@
 
 A small Prometheus exporter that exports metrics about servers from Netcup SCP (server control panel).
 
-<div>
-  <!-- Sonar quality gate -->
-  <a href="https://sonarcloud.io/project/overview?id=kodehat_netcupscp-exporter">
-    <img src="https://sonarcloud.io/api/project_badges/measure?project=kodehat_netcupscp-exporter&metric=alert_status"
-      alt="Sonar quality gate" />
-  </a>
-  <!-- GitHub stars -->
-  <a href="https://github.com/kodehat/netcupscp-exporter">
-    <img src="https://img.shields.io/github/stars/kodehat/netcupscp-exporter"
-      alt="GitHub stars" />
-  </a>
-  <!-- Go version -->
-  <img src="https://img.shields.io/github/go-mod/go-version/kodehat/netcupscp-exporter"
-      alt="Go version" />
-  <!-- Docker image size -->
-  <a href="https://hub.docker.com/r/codehat/netcupscp-exporter">
-    <img src="https://img.shields.io/docker/image-size/codehat/netcupscp-exporter"
-      alt="Docker image size" />
-  </a>
-</div>
+[![Sonar quality gate](https://sonarcloud.io/api/project_badges/measure?project=kodehat_netcupscp-exporter&metric=alert_status)](https://sonarcloud.io/project/overview?id=kodehat_netcupscp-exporter) ![GitHub stars](https://img.shields.io/github/stars/kodehat/netcupscp-exporter) ![Go version](https://img.shields.io/github/go-mod/go-version/kodehat/netcupscp-exporter) [![Docker image size](https://img.shields.io/docker/image-size/codehat/netcupscp-exporter)](https://hub.docker.com/r/codehat/netcupscp-exporter)
 
 ## Table of Contents
 
