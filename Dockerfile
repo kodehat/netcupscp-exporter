@@ -1,4 +1,4 @@
-FROM golang:1.25.6-alpine3.21 AS backend
+FROM golang:1.25.6-alpine3.23 AS backend
 
 ARG VERSION=dev
 
