@@ -48,6 +48,10 @@ func (c DefaultServerCollector) CollectServerData(ctx context.Context) ([]Server
 		slog.Error("error getting server list", "error", err)
 		return nil, err
 	}
+	if serverListMinimal == nil {
+		slog.Warn("no servers found")
+		return []ServerInfo{}, nil
+	}
 	var servers = make([]ServerInfo, len(*serverListMinimal))
 	for i, srv := range *serverListMinimal {
 		server, err := c.getServer(ctx, *srv.Id, respClient)
