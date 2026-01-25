@@ -13,9 +13,9 @@ var (
 		prometheus.GaugeOpts{
 			Namespace: metricsNamespace,
 			Name:      "build_info",
-			Help:      "A metric with a constant '1' value labeled by goversion, revision and version from which netcupscp-exporter was built",
+			Help:      "A metric with a constant '1' value labeled by build time, commit hash, version and goversion from which netcupscp-exporter was built. Missing values are labeled as 'unknown'.",
 		},
-		[]string{"goversion", "revision", "version"})
+		[]string{"buildtime", "commithash", "version", "goversion"})
 	cpuCores = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: metricsNamespace,
@@ -139,9 +139,10 @@ func Load() *prometheus.Registry {
 	)
 
 	buildInfo.With(prometheus.Labels{
-		"goversion": build.GoVersion,
-		"revision":  build.CommitHash,
-		"version":   build.Version,
+		"buildtime":  build.BuildTime,
+		"commithash": build.CommitHash,
+		"version":    build.Version,
+		"goversion":  build.GoVersion,
 	}).Set(1)
 
 	return registry

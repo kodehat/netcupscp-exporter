@@ -7,7 +7,7 @@ var (
 	BuildTime string = "unknown"
 
 	// CommitHash Git commit hash of the built application.
-	CommitHash string
+	CommitHash string = "unknown"
 
 	// Version version of the built application.
 	Version string = "dev"

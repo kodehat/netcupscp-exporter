@@ -101,7 +101,7 @@ func (mu DefaultMetricsUpdater) updateMetricsFromServerInfos(serverInfos []colle
 		baseLabels := serverBaseLabels(server)
 
 		// Update CPU and memory.
-		cpuCores.With(baseLabels).Set(float64(*server.ServerLiveInfo.CpuMaxCount))
+		cpuCores.With(baseLabels).Set(float64(*server.MaxCpuCount))
 		memory.With(baseLabels).Set(float64(*server.ServerLiveInfo.MaxServerMemoryInMiB) * 1024 * 1024)
 
 		// Update other server metrics (like uptime).
