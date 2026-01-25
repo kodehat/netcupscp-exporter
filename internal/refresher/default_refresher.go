@@ -17,6 +17,9 @@ type DefaultRefresher struct {
 
 var _ Refresher = DefaultRefresher{}
 
+// authExpiryBuffer is the duration before actual expiry when we consider the token to be expired.
+const authExpiryBuffer time.Duration = time.Duration(-15) * time.Second
+
 func NewDefaultRefresher(authenticator authenticator.Authenticator, metricsUpdater metrics.MetricsUpdater, refreshInterval time.Duration) DefaultRefresher {
 	return DefaultRefresher{
 		authenticator:   authenticator,
@@ -26,9 +29,9 @@ func NewDefaultRefresher(authenticator authenticator.Authenticator, metricsUpdat
 }
 
 func (dr DefaultRefresher) refresh(ctx context.Context) (isAuthError bool, isMetricError bool, err error) {
-	authExpired, now, expiry := dr.authenticator.IsAuthenticationExpired()
-	if authExpired {
-		slog.Debug("access token expired, refreshing authentication", "now", now, "expiry", expiry)
+	now := time.Now()
+	if dr.authenticator.IsAuthenticationExpired(now.Add(authExpiryBuffer)) {
+		slog.Debug("access token near expiration, refreshing authentication", "expiry", dr.authenticator.GetAuthData().Expiry)
 		_, err := dr.authenticator.Authenticate(ctx)
 		if err != nil {
 			slog.Error("error refreshing authentication", "error", err)
