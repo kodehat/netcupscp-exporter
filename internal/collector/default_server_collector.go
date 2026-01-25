@@ -41,7 +41,7 @@ func (c DefaultServerCollector) CollectServerData(ctx context.Context) ([]Server
 		return nil, err
 	}
 
-	// Chce API availability.
+	// Check API availability.
 	pingStatus, err := c.pingApi(ctx, respClient)
 	if err != nil {
 		slog.Error("error pinging API", "error", err)
@@ -51,7 +51,7 @@ func (c DefaultServerCollector) CollectServerData(ctx context.Context) ([]Server
 
 	// Get maintenance info and check if maintenance is ongoing.
 	// HINT: Disabled as Netcup does not return a list of maintenance information, but only a single object.
-	// Despite that, the API docs specify an array of maintenance objects.
+	// Despite the API docs specifying an array of maintenance objects.
 	/* 	maintenanceInfo, err := c.getMaintenanceInfo(ctx, respClient)
 	   	if err != nil {
 	   		slog.Error("error getting maintenance info", "error", err)
