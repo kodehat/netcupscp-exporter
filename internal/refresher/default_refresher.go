@@ -18,7 +18,7 @@ type DefaultRefresher struct {
 var _ Refresher = DefaultRefresher{}
 
 // authExpiryBuffer is the duration before actual expiry when we consider the token to be expired.
-const authExpiryBuffer time.Duration = time.Duration(-15) * time.Second
+const authExpiryBuffer time.Duration = 15 * time.Second
 
 func NewDefaultRefresher(authenticator authenticator.Authenticator, metricsUpdater metrics.MetricsUpdater, refreshInterval time.Duration) DefaultRefresher {
 	return DefaultRefresher{
