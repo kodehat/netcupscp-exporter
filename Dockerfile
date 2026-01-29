@@ -14,7 +14,7 @@ COPY internal internal/
 RUN apk add --no-cache bash curl git && \
   ./build.sh -v "$VERSION"
 
-FROM alpine:3.23.2
+FROM alpine:3.23.3
 
 LABEL org.opencontainers.image.authors='dev@codehat.de' \
       org.opencontainers.image.url='https://github.com/kodehat/netcupscp-exporter' \
