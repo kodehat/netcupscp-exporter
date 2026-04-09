@@ -4,7 +4,7 @@ go 1.25.6
 
 require (
 	github.com/oapi-codegen/oapi-codegen/v2 v2.6.0
-	github.com/oapi-codegen/runtime v1.3.1
+	github.com/oapi-codegen/runtime v1.4.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/zitadel/oidc/v3 v3.47.0
 )
