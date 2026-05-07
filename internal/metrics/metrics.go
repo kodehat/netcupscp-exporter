@@ -147,3 +147,20 @@ func Load() *prometheus.Registry {
 
 	return registry
 }
+
+func reset() {
+	cpuCores.Reset()
+	memory.Reset()
+	monthlyTrafficIn.Reset()
+	monthlyTrafficOut.Reset()
+	monthlyTrafficTotal.Reset()
+	serverStartTimeSeconds.Reset()
+	serverIpInfo.Reset()
+	ifaceThrottled.Reset()
+	serverStatus.Reset()
+	rescueActive.Reset()
+	rebootRecommended.Reset()
+	diskCapacity.Reset()
+	diskUsed.Reset()
+	diskOptimization.Reset()
+}

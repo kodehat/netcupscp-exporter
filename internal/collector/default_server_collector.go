@@ -50,18 +50,16 @@ func (c DefaultServerCollector) CollectServerData(ctx context.Context) ([]Server
 	slog.Debug("api ping status", "status", pingStatus)
 
 	// Get maintenance info and check if maintenance is ongoing.
-	// HINT: Disabled as Netcup does not return a list of maintenance information, but only a single object.
-	// Despite the API docs specifying an array of maintenance objects.
-	/* 	maintenanceInfo, err := c.getMaintenanceInfo(ctx, respClient)
-	   	if err != nil {
-	   		slog.Error("error getting maintenance info", "error", err)
-	   		return nil, err
-	   	}
-	   	if maintenanceOngoing, maintenanceInfo := isMaintenanceOngoing(maintenanceInfo, time.Now()); maintenanceOngoing {
-	   		slog.Warn("maintenance is currently ongoing", "start_at", maintenanceInfo.StartAt, "finish_at", maintenanceInfo.FinishAt)
-	   		return nil, errors.New("maintenance is currently ongoing")
-	   	}
-	   	slog.Debug("no ongoing maintenance detected") */
+	maintenanceInfo, err := c.getMaintenanceInfo(ctx, respClient)
+	if err != nil {
+		slog.Error("error getting maintenance info", "error", err)
+		return nil, err
+	}
+	if maintenanceOngoing := isMaintenanceOngoing(maintenanceInfo, time.Now()); maintenanceOngoing {
+		slog.Warn("maintenance is currently ongoing", "start_at", maintenanceInfo.StartAt, "finish_at", maintenanceInfo.FinishAt)
+		return nil, errors.New("maintenance is currently ongoing")
+	}
+	slog.Debug("no ongoing maintenance detected")
 
 	serverListMinimal, err := c.getServerListMinimal(ctx, respClient)
 	if err != nil {
@@ -84,16 +82,14 @@ func (c DefaultServerCollector) CollectServerData(ctx context.Context) ([]Server
 	return servers, nil
 }
 
-func isMaintenanceOngoing(maintenanceList *[]client.Maintenance, compareVal time.Time) (bool, *client.Maintenance) {
-	if maintenanceList == nil {
-		return false, nil
+func isMaintenanceOngoing(maintenance *client.Maintenance, compareVal time.Time) bool {
+	if maintenance == nil {
+		return false
 	}
-	for _, maintenance := range *maintenanceList {
-		if TimeBetween(compareVal, maintenance.StartAt, maintenance.FinishAt) {
-			return true, &maintenance
-		}
+	if TimeBetween(compareVal, *maintenance.StartAt, *maintenance.FinishAt) {
+		return true
 	}
-	return false, nil
+	return false
 }
 
 func (c DefaultServerCollector) pingApi(ctx context.Context, respClient *client.ClientWithResponses) (string, error) {
@@ -106,7 +102,7 @@ func (c DefaultServerCollector) pingApi(ctx context.Context, respClient *client.
 	return pingResp.Status(), nil
 }
 
-func (c DefaultServerCollector) getMaintenanceInfo(ctx context.Context, respClient *client.ClientWithResponses) (*[]client.Maintenance, error) {
+func (c DefaultServerCollector) getMaintenanceInfo(ctx context.Context, respClient *client.ClientWithResponses) (*client.Maintenance, error) {
 	maintenanceResp, err := respClient.GetApiV1MaintenanceWithResponse(ctx)
 	if err != nil {
 		return nil, err

@@ -34,6 +34,7 @@ func (mu DefaultMetricsUpdater) UpdateMetrics(context context.Context) error {
 	if err != nil {
 		return err
 	}
+	reset()
 	mu.updateMetricsFromServerInfos(serverInfos)
 	return nil
 }

@@ -332,8 +332,8 @@ type LogType string
 
 // Maintenance defines model for Maintenance.
 type Maintenance struct {
-	FinishAt time.Time `json:"finishAt"`
-	StartAt  time.Time `json:"startAt"`
+	FinishAt *time.Time `json:"finishAt"`
+	StartAt  *time.Time `json:"startAt"`
 }
 
 // NetworkDriver defines model for NetworkDriver.
@@ -1128,6 +1128,9 @@ type ClientInterface interface {
 	// GetApiV1Openapi request
 	GetApiV1Openapi(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// PostApiV1OpenapiMcp request
+	PostApiV1OpenapiMcp(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// PostApiV1RdnsIpv4WithBody request with any body
 	PostApiV1RdnsIpv4WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -1440,6 +1443,18 @@ func (c *Client) GetApiV1Maintenance(ctx context.Context, reqEditors ...RequestE
 
 func (c *Client) GetApiV1Openapi(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetApiV1OpenapiRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1OpenapiMcp(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1OpenapiMcpRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -2748,6 +2763,33 @@ func NewGetApiV1OpenapiRequest(server string) (*http.Request, error) {
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostApiV1OpenapiMcpRequest generates requests for PostApiV1OpenapiMcp
+func NewPostApiV1OpenapiMcpRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/openapi/mcp")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -6767,6 +6809,9 @@ type ClientWithResponsesInterface interface {
 	// GetApiV1OpenapiWithResponse request
 	GetApiV1OpenapiWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1OpenapiResponse, error)
 
+	// PostApiV1OpenapiMcpWithResponse request
+	PostApiV1OpenapiMcpWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PostApiV1OpenapiMcpResponse, error)
+
 	// PostApiV1RdnsIpv4WithBodyWithResponse request with any body
 	PostApiV1RdnsIpv4WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1RdnsIpv4Response, error)
 
@@ -7077,8 +7122,8 @@ func (r GetApiPingResponse) StatusCode() int {
 type GetApiV1MaintenanceResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	HALJSON200   *[]Maintenance
-	JSON200      *[]Maintenance
+	HALJSON200   *Maintenance
+	JSON200      *Maintenance
 }
 
 // Status returns HTTPResponse.Status
@@ -7114,6 +7159,29 @@ func (r GetApiV1OpenapiResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetApiV1OpenapiResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1OpenapiMcpResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	HALJSON200   *map[string]interface{}
+	JSON200      *map[string]interface{}
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1OpenapiMcpResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1OpenapiMcpResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -9132,6 +9200,15 @@ func (c *ClientWithResponses) GetApiV1OpenapiWithResponse(ctx context.Context, r
 	return ParseGetApiV1OpenapiResponse(rsp)
 }
 
+// PostApiV1OpenapiMcpWithResponse request returning *PostApiV1OpenapiMcpResponse
+func (c *ClientWithResponses) PostApiV1OpenapiMcpWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PostApiV1OpenapiMcpResponse, error) {
+	rsp, err := c.PostApiV1OpenapiMcp(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1OpenapiMcpResponse(rsp)
+}
+
 // PostApiV1RdnsIpv4WithBodyWithResponse request with arbitrary body returning *PostApiV1RdnsIpv4Response
 func (c *ClientWithResponses) PostApiV1RdnsIpv4WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1RdnsIpv4Response, error) {
 	rsp, err := c.PostApiV1RdnsIpv4WithBody(ctx, contentType, body, reqEditors...)
@@ -10060,14 +10137,14 @@ func ParseGetApiV1MaintenanceResponse(rsp *http.Response) (*GetApiV1MaintenanceR
 
 	switch {
 	case rsp.Header.Get("Content-Type") == "application/hal+json" && rsp.StatusCode == 200:
-		var dest []Maintenance
+		var dest Maintenance
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.HALJSON200 = &dest
 
 	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 200:
-		var dest []Maintenance
+		var dest Maintenance
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -10087,6 +10164,39 @@ func ParseGetApiV1OpenapiResponse(rsp *http.Response) (*GetApiV1OpenapiResponse,
 	}
 
 	response := &GetApiV1OpenapiResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.Header.Get("Content-Type") == "application/hal+json" && rsp.StatusCode == 200:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.HALJSON200 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 200:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1OpenapiMcpResponse parses an HTTP response from a PostApiV1OpenapiMcpWithResponse call
+func ParsePostApiV1OpenapiMcpResponse(rsp *http.Response) (*PostApiV1OpenapiMcpResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1OpenapiMcpResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

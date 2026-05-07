@@ -1,6 +1,8 @@
 module github.com/kodehat/netcupscp-exporter
 
-go 1.26.0
+go 1.26
+
+toolchain go1.26.2
 
 require (
 	github.com/oapi-codegen/oapi-codegen/v2 v2.7.0
