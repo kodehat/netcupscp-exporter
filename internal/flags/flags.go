@@ -16,13 +16,11 @@ const (
 )
 
 type Flags struct {
-	Host            string
-	Port            string
-	RefreshToken    string
-	RevokeToken     bool
-	GetTokenDetails bool
-	logLevel        string
-	logJson         bool
+	Host         string
+	Port         string
+	RefreshToken string
+	logLevel     string
+	logJson      bool
 }
 
 var F Flags
