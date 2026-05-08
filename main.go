@@ -39,22 +39,25 @@ func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, _ io.Write
 	logger := slog.New(flags.GetLogHandler(stdout))
 	slog.SetDefault(logger)
 
-	defaultAuthenticator := authenticator.NewDefaultAuthenticator("", flags.RefreshToken)
+	defaultAuthenticator := authenticator.NewDefaultAuthenticator(flags.RefreshToken)
 	authResult, err := defaultAuthenticator.Authenticate(ctx)
 	if err != nil {
 		logger.Error("error during authentication", "error", err)
 		return err
 	}
 	if authResult.IsNewDevice {
-		authData := defaultAuthenticator.GetAuthData()
-		logger.Warn("first-time setup: obtained new refresh token, please store it for future use", "refresh_token", authData.RefreshToken)
+		logger.Warn("first-time setup: obtained new refresh token, please store it for future use", "refresh_token", authResult.RefreshToken)
 		logger.Info("the application will now exit, please restart it with the new refresh token")
 		return nil
 	}
 
 	registry := metrics.Load()
 
-	serverCollector := collector.NewDefaultServerCollector(defaultAuthenticator)
+	serverCollector, err := collector.NewDefaultServerCollector(defaultAuthenticator)
+	if err != nil {
+		logger.Error("error creating server collector", "error", err)
+		return err
+	}
 	metricsUpdater := metrics.NewDefaultMetricsUpdater(serverCollector)
 	refresher := refresher.NewDefaultRefresher(metricsUpdater, metricRefreshInterval)
 

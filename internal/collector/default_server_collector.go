@@ -14,27 +14,25 @@ import (
 const scpBaseUrl = "https://www.servercontrolpanel.de/scp-core"
 
 type DefaultServerCollector struct {
-	authenticator authenticator.Authenticator
+	client *client.ClientWithResponses
 }
 
 var _ ServerCollector = DefaultServerCollector{}
 
-func NewDefaultServerCollector(authenticator authenticator.Authenticator) DefaultServerCollector {
-	return DefaultServerCollector{
-		authenticator: authenticator,
+func NewDefaultServerCollector(authenticator authenticator.Authenticator) (DefaultServerCollector, error) {
+	// Prepare authenticated client.
+	client, err := client.NewClientWithResponses(scpBaseUrl, client.WithHTTPClient(authenticator.GetAuthenticatedClient()))
+	if err != nil {
+		return DefaultServerCollector{}, err
 	}
+	return DefaultServerCollector{
+		client: client,
+	}, nil
 }
 
 func (c DefaultServerCollector) CollectServerData(ctx context.Context) ([]ServerInfo, error) {
-	// Prepare authenticated client.
-	respClient, err := client.NewClientWithResponses(scpBaseUrl, client.WithHTTPClient(c.authenticator.GetAuthData().Client))
-	if err != nil {
-		slog.Error("error creating client", "error", err)
-		return nil, err
-	}
-
 	// Check API availability.
-	pingStatus, err := c.pingApi(ctx, respClient)
+	pingStatus, err := c.pingApi(ctx, c.client)
 	if err != nil {
 		slog.Error("error pinging API", "error", err)
 		return nil, err
@@ -42,7 +40,7 @@ func (c DefaultServerCollector) CollectServerData(ctx context.Context) ([]Server
 	slog.Debug("api ping status", "status", pingStatus)
 
 	// Get maintenance info and check if maintenance is ongoing.
-	maintenanceInfo, err := c.getMaintenanceInfo(ctx, respClient)
+	maintenanceInfo, err := c.getMaintenanceInfo(ctx, c.client)
 	if err != nil {
 		slog.Error("error getting maintenance info", "error", err)
 		return nil, err
@@ -53,7 +51,7 @@ func (c DefaultServerCollector) CollectServerData(ctx context.Context) ([]Server
 	}
 	slog.Debug("no ongoing maintenance detected")
 
-	serverListMinimal, err := c.getServerListMinimal(ctx, respClient)
+	serverListMinimal, err := c.getServerListMinimal(ctx, c.client)
 	if err != nil {
 		slog.Error("error getting server list", "error", err)
 		return nil, err
@@ -64,7 +62,7 @@ func (c DefaultServerCollector) CollectServerData(ctx context.Context) ([]Server
 	}
 	var servers = make([]ServerInfo, len(*serverListMinimal))
 	for i, srv := range *serverListMinimal {
-		server, err := c.getServer(ctx, *srv.Id, respClient)
+		server, err := c.getServer(ctx, *srv.Id, c.client)
 		if err != nil {
 			slog.Debug("error getting server", "serverId", *srv.Id, "error", err)
 			return nil, err

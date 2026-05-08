@@ -28,7 +28,7 @@ func (dr DefaultRefresher) refresh(ctx context.Context) error {
 		slog.Error("error while updating metrics", "error", err)
 		return err
 	}
-	slog.Debug("metrics have been updated successfully")
+	slog.Debug("metrics have been updated successfully", "next_update", time.Now().Add(dr.refreshInterval))
 	return nil
 }
 
