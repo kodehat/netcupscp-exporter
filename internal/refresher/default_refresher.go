@@ -29,15 +29,6 @@ func NewDefaultRefresher(authenticator authenticator.Authenticator, metricsUpdat
 }
 
 func (dr DefaultRefresher) refresh(ctx context.Context) (isAuthError bool, isMetricError bool, err error) {
-	now := time.Now()
-	if dr.authenticator.IsAuthenticationExpired(now.Add(authExpiryBuffer)) {
-		slog.Debug("access token near expiration, refreshing authentication", "expiry", dr.authenticator.GetAuthData().Expiry)
-		_, err := dr.authenticator.Authenticate(ctx)
-		if err != nil {
-			slog.Error("error refreshing authentication", "error", err)
-			return true, false, err
-		}
-	}
 	err = dr.metricsUpdater.UpdateMetrics(ctx)
 	if err != nil {
 		slog.Error("error while updating metrics", "error", err)

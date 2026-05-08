@@ -2,25 +2,21 @@ package authenticator
 
 import (
 	"context"
-	"errors"
 	"log/slog"
-	"time"
 
-	"github.com/zitadel/oidc/v3/pkg/client/rp"
-	"github.com/zitadel/oidc/v3/pkg/oidc"
+	"golang.org/x/oauth2"
 )
 
 var (
-	netcupIssuer   = "https://www.servercontrolpanel.de/realms/scp"
-	netcupClientId = "scp"
-	netcupScopes   = []string{"offline_access", "openid"}
+	netcupAuthUrl       = "https://www.servercontrolpanel.de/realms/scp/protocol/openid-connect/auth"
+	netcupTokenUrl      = "https://www.servercontrolpanel.de/realms/scp/protocol/openid-connect/token"
+	netcupDeviceAuthUrl = "https://www.servercontrolpanel.de/realms/scp/protocol/openid-connect/auth/device"
+	netcupClientId      = "scp"
+	netcupScopes        = []string{"offline_access", "openid"}
 )
-
-const refreshTokenTypeHint = "refresh_token"
 
 type DefaultAuthenticator struct {
 	authData *AuthData
-	issuer   string
 	clientId string
 	scopes   []string
 }
@@ -35,29 +31,32 @@ func NewDefaultAuthenticator(accessToken, refreshToken string) *DefaultAuthentic
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,
 		},
-		issuer:   netcupIssuer,
 		clientId: netcupClientId,
 		scopes:   netcupScopes,
 	}
 }
 
-func (a *DefaultAuthenticator) createOIDCProvider(ctx context.Context) (rp.RelyingParty, error) {
-	provider, err := rp.NewRelyingPartyOIDC(ctx, a.issuer, a.clientId, "", "", a.scopes)
-	if err != nil {
-		slog.Error("error creating OIDC provider", "error", err)
-		return nil, err
+func (a *DefaultAuthenticator) createOAuthConfig() (*oauth2.Config, error) {
+	config := &oauth2.Config{
+		ClientID: a.clientId,
+		Scopes:   a.scopes,
+		Endpoint: oauth2.Endpoint{
+			AuthURL:       netcupAuthUrl,
+			TokenURL:      netcupTokenUrl,
+			DeviceAuthURL: netcupDeviceAuthUrl,
+		},
 	}
-	return provider, nil
+	return config, nil
 }
 
-func (a *DefaultAuthenticator) newDeviceAuth(ctx context.Context, provider rp.RelyingParty) (*AuthData, error) {
-	resp, err := rp.DeviceAuthorization(ctx, a.scopes, provider, nil)
+func (a *DefaultAuthenticator) newDeviceAuth(ctx context.Context, oauthConfig *oauth2.Config) (*AuthData, error) {
+	deviceAuth, err := oauthConfig.DeviceAuth(ctx)
 	if err != nil {
 		slog.Error("error during device authorization", "error", err)
 		return nil, err
 	}
-	slog.Info("complete device authorization using given uri and code", "verification_uri", resp.VerificationURI, "user_code", resp.UserCode)
-	token, err := rp.DeviceAccessToken(ctx, resp.DeviceCode, time.Duration(resp.Interval)*time.Second, provider)
+	slog.Info("complete device authorization using given uri and code", "verification_uri", deviceAuth.VerificationURI, "user_code", deviceAuth.UserCode)
+	token, err := oauthConfig.DeviceAccessToken(ctx, deviceAuth)
 	if err != nil {
 		slog.Error("error getting access token", "error", err)
 		return nil, err
@@ -73,36 +72,27 @@ func (a *DefaultAuthenticator) newDeviceAuth(ctx context.Context, provider rp.Re
 	}, nil
 }
 
-func (a *DefaultAuthenticator) refreshTokenAuth(ctx context.Context, provider rp.RelyingParty) (*AuthData, error) {
-	token, err := rp.RefreshTokens[*oidc.IDTokenClaims](ctx, provider, a.authData.RefreshToken, "", "")
-	if err != nil {
-		slog.Error("error refreshing token", "error", err)
-		return nil, err
+func (a *DefaultAuthenticator) refreshTokenAuth(ctx context.Context, oauthConfig *oauth2.Config) (*AuthData, error) {
+	token := &oauth2.Token{
+		RefreshToken: a.authData.RefreshToken,
 	}
-	slog.Debug("successfully refreshed access token using refresh token", "expiry", token.Expiry)
-	// Preserve the existing refresh token if the server doesn't issue a new one.
-	refreshToken := token.RefreshToken
-	if refreshToken == "" {
-		refreshToken = a.authData.RefreshToken
-	}
+	client := oauthConfig.Client(ctx, token)
 	return &AuthData{
 		AccessToken:  token.AccessToken,
-		RefreshToken: refreshToken,
-		TokenType:    token.TokenType,
-		Expiry:       token.Expiry,
-		Subject:      token.IDTokenClaims.Subject,
+		RefreshToken: token.RefreshToken,
+		Client:       client,
 	}, nil
 }
 
 func (a *DefaultAuthenticator) Authenticate(ctx context.Context) (*AuthResult, error) {
-	provider, err := a.createOIDCProvider(ctx)
+	oauthConfig, err := a.createOAuthConfig()
 	if err != nil {
 		return nil, err
 	}
 
 	// If refresh token is empty, use new device authorization flow.
 	if a.authData.RefreshToken == "" {
-		authData, err := a.newDeviceAuth(ctx, provider)
+		authData, err := a.newDeviceAuth(ctx, oauthConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -115,7 +105,7 @@ func (a *DefaultAuthenticator) Authenticate(ctx context.Context) (*AuthResult, e
 		}, nil
 	}
 	// Otherwise, use refresh token flow for existing device.
-	authData, err := a.refreshTokenAuth(ctx, provider)
+	authData, err := a.refreshTokenAuth(ctx, oauthConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -126,44 +116,6 @@ func (a *DefaultAuthenticator) Authenticate(ctx context.Context) (*AuthResult, e
 	return &AuthResult{
 		IsNewDevice: false,
 	}, nil
-}
-
-func (a *DefaultAuthenticator) Revoke(ctx context.Context) error {
-	provider, err := a.createOIDCProvider(ctx)
-	if err != nil {
-		return err
-	}
-
-	if a.authData.RefreshToken == "" {
-		return errors.New("no refresh token provided for revocation")
-	}
-	err = rp.RevokeToken(ctx, provider, a.authData.RefreshToken, refreshTokenTypeHint)
-	if err != nil {
-		slog.Error("error revoking refresh token", "error", err)
-		return err
-	}
-	slog.Debug("successfully revoked refresh token")
-	return nil
-}
-
-func (a *DefaultAuthenticator) GetUserInfo(ctx context.Context) (*UserInfo, error) {
-	provider, err := rp.NewRelyingPartyOIDC(ctx, a.issuer, "", "", "", nil)
-	if err != nil {
-		slog.Error("error creating OIDC provider", "error", err)
-		return nil, err
-	}
-
-	userInfo, err := rp.Userinfo[*oidc.UserInfo](ctx, a.authData.AccessToken, a.authData.TokenType, a.authData.Subject, provider)
-	if err != nil {
-		slog.Error("error getting user info", "error", err)
-		return nil, err
-	}
-	slog.Debug("successfully obtained user info")
-	return &UserInfo{userInfo}, nil
-}
-
-func (a *DefaultAuthenticator) IsAuthenticationExpired(compareVal time.Time) (expired bool) {
-	return compareVal.After(a.authData.Expiry)
 }
 
 func (a *DefaultAuthenticator) GetAuthData() *AuthData {

@@ -40,16 +40,6 @@ func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, _ io.Write
 	slog.SetDefault(logger)
 
 	defaultAuthenticator := authenticator.NewDefaultAuthenticator("", flags.RefreshToken)
-	if flags.RevokeToken {
-		logger.Info("revoking refresh token as requested")
-		err := defaultAuthenticator.Revoke(ctx)
-		if err != nil {
-			logger.Error("error revoking refresh token", "error", err)
-			return err
-		}
-		logger.Info("successfully revoked refresh token, the application will now exit")
-		return nil
-	}
 	authResult, err := defaultAuthenticator.Authenticate(ctx)
 	if err != nil {
 		logger.Error("error during authentication", "error", err)
@@ -59,18 +49,6 @@ func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, _ io.Write
 		authData := defaultAuthenticator.GetAuthData()
 		logger.Warn("first-time setup: obtained new refresh token, please store it for future use", "refresh_token", authData.RefreshToken)
 		logger.Info("the application will now exit, please restart it with the new refresh token")
-		return nil
-	}
-
-	// Getting token details requires a valid access token.
-	if flags.GetTokenDetails {
-		logger.Info("getting token details as requested")
-		userInfo, err := defaultAuthenticator.GetUserInfo(ctx)
-		if err != nil {
-			logger.Error("error getting token details", "error", err)
-			return err
-		}
-		logger.Info("token details obtained successfully", "name", userInfo.Name, "email", userInfo.Email, "username", userInfo.PreferredUsername)
 		return nil
 	}
 

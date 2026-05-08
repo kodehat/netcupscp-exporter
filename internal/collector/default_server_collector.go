@@ -9,10 +9,9 @@ import (
 
 	"github.com/kodehat/netcupscp-exporter/internal/authenticator"
 	"github.com/kodehat/netcupscp-exporter/internal/client"
-	"github.com/oapi-codegen/oapi-codegen/v2/pkg/securityprovider"
 )
 
-const scpBaseUrl = "https://servercontrolpanel.de/scp-core"
+const scpBaseUrl = "https://www.servercontrolpanel.de/scp-core"
 
 type DefaultServerCollector struct {
 	authenticator authenticator.Authenticator
@@ -30,12 +29,7 @@ func NewDefaultServerCollector(authenticator authenticator.Authenticator) Defaul
 
 func (c DefaultServerCollector) CollectServerData(ctx context.Context) ([]ServerInfo, error) {
 	// Prepare authenticated client.
-	bearerAuth, err := securityprovider.NewSecurityProviderBearerToken(c.authenticator.GetAuthData().AccessToken)
-	if err != nil {
-		slog.Error("error creating bearer auth", "error", err)
-		return nil, err
-	}
-	respClient, err := client.NewClientWithResponses(scpBaseUrl, client.WithHTTPClient(&c.httpClient), client.WithRequestEditorFn(bearerAuth.Intercept))
+	respClient, err := client.NewClientWithResponses(scpBaseUrl, client.WithHTTPClient(c.authenticator.GetAuthData().Client))
 	if err != nil {
 		slog.Error("error creating client", "error", err)
 		return nil, err
@@ -83,7 +77,7 @@ func (c DefaultServerCollector) CollectServerData(ctx context.Context) ([]Server
 }
 
 func isMaintenanceOngoing(maintenance *client.Maintenance, compareVal time.Time) bool {
-	if maintenance == nil {
+	if maintenance == nil || maintenance.StartAt == nil || maintenance.FinishAt == nil {
 		return false
 	}
 	if TimeBetween(compareVal, *maintenance.StartAt, *maintenance.FinishAt) {

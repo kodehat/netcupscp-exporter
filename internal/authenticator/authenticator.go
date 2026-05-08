@@ -2,31 +2,20 @@ package authenticator
 
 import (
 	"context"
-	"time"
-
-	"github.com/zitadel/oidc/v3/pkg/oidc"
+	"net/http"
 )
 
 type AuthData struct {
 	AccessToken  string
 	RefreshToken string
-	TokenType    string
-	Expiry       time.Time
-	Subject      string
+	Client       *http.Client
 }
 
 type AuthResult struct {
 	IsNewDevice bool
 }
 
-type UserInfo struct {
-	*oidc.UserInfo
-}
-
 type Authenticator interface {
 	Authenticate(context.Context) (*AuthResult, error)
 	GetAuthData() *AuthData
-	Revoke(context.Context) error
-	GetUserInfo(context.Context) (*UserInfo, error)
-	IsAuthenticationExpired(time.Time) bool
 }
