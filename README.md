@@ -54,8 +54,6 @@ Environment variables (defaults shown):
 - `HOST` — host to bind the HTTP server to (default: all interfaces / empty)
 - `PORT` — port to bind the HTTP server to (default: `2008`)
 - `REFRESH_TOKEN` — Netcup SCP refresh token (default: empty)
-- `REVOKE_TOKEN` — set to `true` to revoke the given refresh token and exit (default: `false`)
-- `GET_TOKEN_DETAILS` — set to `true` to print details about the refresh token and exit (default: `false`)
 - `LOG_LEVEL` — logging level (default: `info`; options: `debug`, `info`, `warn`, `error`)
 - `LOG_JSON` — set to `true` to enable JSON formatted logging (default: `false`)
 
@@ -64,8 +62,6 @@ Command-line flags (override env vars):
 - `--host` string (bind host)
 - `--port` string (bind port)
 - `--refresh-token` string (Netcup SCP refresh token)
-- `--revoke-token` bool (revoke refresh token and exit)
-- `--get-token-details` bool (print token details and exit)
 - `--log-level` string (logging level)
 - `--log-json` bool (enable JSON logging)
 
