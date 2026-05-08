@@ -47,7 +47,7 @@ func (c DefaultServerCollector) CollectServerData(ctx context.Context) ([]Server
 		slog.Error("error getting maintenance info", "error", err)
 		return nil, err
 	}
-	if maintenanceOngoing := isMaintenanceOngoing(maintenanceInfo, time.Now()); maintenanceOngoing {
+	if isMaintenanceOngoing(maintenanceInfo, time.Now()) {
 		slog.Warn("maintenance is currently ongoing", "start_at", maintenanceInfo.StartAt, "finish_at", maintenanceInfo.FinishAt)
 		return nil, errors.New("maintenance is currently ongoing")
 	}
