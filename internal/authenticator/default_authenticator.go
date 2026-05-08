@@ -80,9 +80,14 @@ func (a *DefaultAuthenticator) refreshTokenAuth(ctx context.Context, provider rp
 		return nil, err
 	}
 	slog.Debug("successfully refreshed access token using refresh token", "expiry", token.Expiry)
+	// Preserve the existing refresh token if the server doesn't issue a new one.
+	refreshToken := token.RefreshToken
+	if refreshToken == "" {
+		refreshToken = a.authData.RefreshToken
+	}
 	return &AuthData{
 		AccessToken:  token.AccessToken,
-		RefreshToken: token.RefreshToken,
+		RefreshToken: refreshToken,
 		TokenType:    token.TokenType,
 		Expiry:       token.Expiry,
 		Subject:      token.IDTokenClaims.Subject,
@@ -98,23 +103,29 @@ func (a *DefaultAuthenticator) Authenticate(ctx context.Context) (*AuthResult, e
 	// If refresh token is empty, use new device authorization flow.
 	if a.authData.RefreshToken == "" {
 		authData, err := a.newDeviceAuth(ctx, provider)
+		if err != nil {
+			return nil, err
+		}
 
 		// Update stored auth data.
 		a.authData = authData
 
 		return &AuthResult{
 			IsNewDevice: true,
-		}, err
+		}, nil
 	}
 	// Otherwise, use refresh token flow for existing device.
 	authData, err := a.refreshTokenAuth(ctx, provider)
+	if err != nil {
+		return nil, err
+	}
 
 	// Update stored auth data.
 	a.authData = authData
 
 	return &AuthResult{
 		IsNewDevice: false,
-	}, err
+	}, nil
 }
 
 func (a *DefaultAuthenticator) Revoke(ctx context.Context) error {
