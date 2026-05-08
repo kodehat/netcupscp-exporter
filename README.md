@@ -71,7 +71,7 @@ The exporter exposes Prometheus metrics (HTTP) on the configured address and pat
 
 **Collected metrics** (prometheus names prefixed with `ncscp_`):
 
-- **ncscp_build_info**: gauge — constant `1` labeled by `goversion`, `revision`, `version`.
+- **ncscp_build_info**: gauge — constant `1` labeled by `buildtime`, `commithash`, `version`, `goversion`.
 - **ncscp_cpu_cores**: gauge — number of CPU cores; labels: `servername`, `servernickname`.
 - **ncscp_memory_bytes**: gauge — amount of memory in bytes; labels: `servername`, `servernickname`.
 - **ncscp_monthlytraffic_in_bytes**: gauge — monthly incoming traffic in bytes; labels: `servername`, `servernickname`, `month`, `year`, `mac`.

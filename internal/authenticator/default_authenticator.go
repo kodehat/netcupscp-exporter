@@ -2,6 +2,7 @@ package authenticator
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	"golang.org/x/oauth2"
@@ -63,7 +64,7 @@ func (a *DefaultAuthenticator) newDeviceAuth(ctx context.Context, oauthConfig *o
 	}
 	if token.AccessToken == "" || token.RefreshToken == "" {
 		slog.Error("received empty access token or refresh token during device authorization")
-		return nil, err
+		return nil, errors.New("received empty access token or refresh token during device authorization")
 	}
 	slog.Debug("successfully obtained access token and refresh token via device authorization")
 	return &AuthData{

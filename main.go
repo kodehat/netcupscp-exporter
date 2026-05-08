@@ -56,7 +56,7 @@ func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, _ io.Write
 
 	serverCollector := collector.NewDefaultServerCollector(defaultAuthenticator)
 	metricsUpdater := metrics.NewDefaultMetricsUpdater(serverCollector)
-	refresher := refresher.NewDefaultRefresher(defaultAuthenticator, metricsUpdater, metricRefreshInterval)
+	refresher := refresher.NewDefaultRefresher(metricsUpdater, metricRefreshInterval)
 
 	// Start periodic metrics refresh (including refreshing authentication) in a separate goroutine.
 	go refresher.StartRefreshMetricsPeriodically(ctx)
@@ -82,7 +82,7 @@ func run(ctx context.Context, flags flags.Flags, _ io.Reader, stdout, _ io.Write
 	wg.Go(func() {
 		<-ctx.Done()
 		// Use a new context for shutdown.
-		shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
 			logger.Error("error shutting down http server", "error", err)

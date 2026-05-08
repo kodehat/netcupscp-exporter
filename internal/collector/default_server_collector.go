@@ -15,7 +15,6 @@ const scpBaseUrl = "https://www.servercontrolpanel.de/scp-core"
 
 type DefaultServerCollector struct {
 	authenticator authenticator.Authenticator
-	httpClient    http.Client
 }
 
 var _ ServerCollector = DefaultServerCollector{}
@@ -23,7 +22,6 @@ var _ ServerCollector = DefaultServerCollector{}
 func NewDefaultServerCollector(authenticator authenticator.Authenticator) DefaultServerCollector {
 	return DefaultServerCollector{
 		authenticator: authenticator,
-		httpClient:    http.Client{},
 	}
 }
 
