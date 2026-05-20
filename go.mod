@@ -5,7 +5,7 @@ go 1.26
 toolchain go1.26.2
 
 require (
-	github.com/oapi-codegen/runtime v1.4.0
+	github.com/oapi-codegen/runtime v1.4.1
 	github.com/prometheus/client_golang v1.23.2
 	golang.org/x/oauth2 v0.36.0
 )
